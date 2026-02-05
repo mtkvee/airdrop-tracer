@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Airdrop Tracker</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png" />
+    <link rel="manifest" href="favicon/site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+  </head>
+  <body>
+    <h1>Airdrop Tracker</h1>
+    <h3>by <a href="https://github.com/mtkvee">Vee</a></h3>
+    <div class="app">
+      <!-- Top header -->
+      <header class="header">
+        <div class="header-left">
+          <div class="search-wrap">
+            <i class="fas fa-search search-icon"></i>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Filter projects"
+              id="searchInput"
+            />
+            <i class="fas fa-chevron-down search-dropdown"></i>
+          </div>
+          <div class="filter-bar">
+            <select class="filter-select" id="taskFilter">
+              <option value="">Task</option>
+              <option value="daily">Daily</option>
+              <option value="time-based">Time based</option>
+              <option value="quest">Quest</option>
+              <option value="whitelist">Whitelist</option>
+            </select>
+            <select class="filter-select" id="taskTypeFilter">
+              <option value="">Task Type</option>
+              <option value="role">Getting a role</option>
+              <option value="ambassador">Ambassador</option>
+              <option value="mainnet">Mainnet</option>
+              <option value="mint">Mint NFT</option>
+              <option value="trading">Trading</option>
+              <option value="social">Social</option>
+              <option value="predictions">Predictions</option>
+            </select>
+            <select class="filter-select" id="statusFilter">
+              <option value="">Status</option>
+              <option value="reward">Reward Available</option>
+              <option value="potential">Potential</option>
+              <option value="confirmed">Confirmed</option>
+            </select>
+            <button
+              type="button"
+              class="btn-remove-filters"
+              id="removeFiltersBtn"
+              aria-label="Remove all filters"
+              title="Remove all filters"
+            >
+              <i class="fas fa-times-circle"></i>
+            </button>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="right-above">
+            <button
+              type="button"
+              class="btn-add-airdrop"
+              id="addAirdropBtn"
+              aria-label="Add airdrop"
+            >
+              <i class="fas fa-plus"></i> Add Airdrop
+            </button>
+            <button
+              type="button"
+              class="btn-manage-options"
+              id="manageOptionsBtn"
+              aria-label="Manage select options"
+              title="Manage select options"
+            >
+              <i class="fas fa-sliders-h"></i> Options
+            </button>
+            <button
+              type="button"
+              class="btn-delete-all"
+              id="deleteAllBtn"
+              aria-label="Delete all airdrops"
+              title="Delete all airdrops"
+            >
+              <i class="fas fa-trash"></i> Delete All
+            </button>
+          </div>
+          <div class="right-below">
+            <button
+              type="button"
+              class="btn-import-export"
+              id="exportBtn"
+              aria-label="Export airdrops"
+              title="Export"
+            >
+              <i class="fas fa-download"></i> Export
+            </button>
+            <button
+              type="button"
+              class="btn-import-export"
+              id="importBtn"
+              aria-label="Import airdrops"
+              title="Import"
+            >
+              <i class="fas fa-upload"></i> Import
+            </button>
+            <input
+              type="file"
+              id="importFileInput"
+              accept=".json,application/json"
+              hidden
+            />
+            <div class="tabs">
+              <button type="button" class="tab tab-active" data-tab="all">
+                All
+              </button>
+              <button type="button" class="tab" data-tab="newTasks">
+                New Tasks
+              </button>
+            </div>
+            <div class="pagination-nav">
+              <button
+                type="button"
+                class="nav-arrow"
+                id="prevPage"
+                aria-label="Previous page"
+              >
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button
+                type="button"
+                class="nav-arrow"
+                id="nextPage"
+                aria-label="Next page"
+              >
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+            <button type="button" class="user-icon" aria-label="User menu">
+              <i class="fas fa-user-circle"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main table -->
+      <main class="main">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="col-name sortable" data-sort="name">
+                  Name <i class="fas fa-sort"></i>
+                </th>
+                <th class="col-task sortable" data-sort="task">Task</th>
+                <th class="col-tasktype sortable" data-sort="taskType">
+                  Description
+                </th>
+                <th class="col-status sortable" data-sort="status">
+                  Updated Status
+                </th>
+                <th class="col-reward sortable" data-sort="reward">
+                  Reward Type
+                </th>
+                <th class="col-raise sortable" data-sort="raise">
+                  Raise/Funds
+                </th>
+                <th
+                  class="col-actions"
+                  style="/* align-items: center; */ text-align: center"
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- Rows injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+
+    <!-- Filters modal -->
+    <div class="modal-overlay" id="filtersModal" aria-hidden="true">
+      <div class="modal" role="dialog" aria-labelledby="filtersTitle">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <i class="fas fa-layer-group modal-title-icon"></i>
+            <h2 id="filtersTitle" class="modal-title">Filters</h2>
+          </div>
+          <button
+            type="button"
+            class="modal-close"
+            id="modalClose"
+            aria-label="Close filters"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-tab-underline"></div>
+        <div class="modal-body">
+          <div class="filter-categories">
+            <button
+              type="button"
+              class="filter-category"
+              data-category="taskType"
+            >
+              <i class="fas fa-file-alt"></i>
+              <span>Task Type</span>
+              <i class="fas fa-chevron-down category-arrow"></i>
+            </button>
+            <div class="filter-category-content" id="content-taskType">
+              <label
+                ><input type="checkbox" name="ft-task" value="role" /> Getting a
+                role</label
+              >
+              <label
+                ><input type="checkbox" name="ft-task" value="ambassador" />
+                Ambassador</label
+              >
+              <label
+                ><input type="checkbox" name="ft-task" value="mainnet" />
+                Mainnet</label
+              >
+              <label
+                ><input type="checkbox" name="ft-task" value="mint" /> Mint
+                NFT</label
+              >
+              <label
+                ><input type="checkbox" name="ft-task" value="trading" />
+                Trading</label
+              >
+              <label
+                ><input type="checkbox" name="ft-task" value="social" />
+                Social</label
+              >
+            </div>
+            <button
+              type="button"
+              class="filter-category"
+              data-category="rewardType"
+            >
+              <i class="fas fa-trophy"></i>
+              <span>Reward Type</span>
+              <i class="fas fa-chevron-down category-arrow"></i>
+            </button>
+            <div class="filter-category-content" id="content-rewardType">
+              <label
+                ><input type="checkbox" name="ft-reward" value="airdrop" />
+                Airdrop</label
+              >
+              <label
+                ><input type="checkbox" name="ft-reward" value="ambassador" />
+                Ambassador</label
+              >
+            </div>
+            <button
+              type="button"
+              class="filter-category"
+              data-category="status"
+            >
+              <i class="fas fa-tag"></i>
+              <span>Status</span>
+              <i class="fas fa-chevron-down category-arrow"></i>
+            </button>
+            <div class="filter-category-content" id="content-status">
+              <label
+                ><input type="checkbox" name="ft-status" value="reward" />
+                Reward Available</label
+              >
+              <label
+                ><input type="checkbox" name="ft-status" value="potential" />
+                Potential</label
+              >
+              <label
+                ><input type="checkbox" name="ft-status" value="confirmed" />
+                Confirmed</label
+              >
+            </div>
+            <button
+              type="button"
+              class="filter-category"
+              data-category="newActivities"
+            >
+              <i class="fas fa-file-medical"></i>
+              <span>New Activities</span>
+              <i class="fas fa-chevron-down category-arrow"></i>
+            </button>
+            <div class="filter-category-content" id="content-newActivities">
+              <label
+                ><input type="checkbox" name="ft-new" value="yes" /> Has new
+                activities</label
+              >
+            </div>
+            <button
+              type="button"
+              class="filter-category"
+              data-category="latestUpdates"
+            >
+              <i class="fas fa-clock"></i>
+              <span>Latest Status Updates</span>
+              <i class="fas fa-chevron-down category-arrow"></i>
+            </button>
+            <div class="filter-category-content" id="content-latestUpdates">
+              <label
+                ><input type="checkbox" name="ft-updates" value="24h" /> Last 24
+                hours</label
+              >
+              <label
+                ><input type="checkbox" name="ft-updates" value="7d" /> Last 7
+                days</label
+              >
+              <label
+                ><input type="checkbox" name="ft-updates" value="30d" /> Last 30
+                days</label
+              >
+            </div>
+            <button
+              type="button"
+              class="filter-category"
+              data-category="category"
+            >
+              <i class="fas fa-th-large"></i>
+              <span>Category</span>
+              <i class="fas fa-chevron-down category-arrow"></i>
+            </button>
+            <div class="filter-category-content" id="content-category">
+              <label
+                ><input type="checkbox" name="ft-cat" value="defi" />
+                DeFi</label
+              >
+              <label
+                ><input type="checkbox" name="ft-cat" value="gaming" />
+                Gaming</label
+              >
+              <label
+                ><input type="checkbox" name="ft-cat" value="nft" /> NFT</label
+              >
+              <label
+                ><input type="checkbox" name="ft-cat" value="l2" /> L2</label
+              >
+            </div>
+            <button type="button" class="filter-category" data-category="tags">
+              <i class="fas fa-hashtag"></i>
+              <span>Tags</span>
+              <i class="fas fa-chevron-down category-arrow"></i>
+            </button>
+            <div class="filter-category-content" id="content-tags">
+              <label
+                ><input type="checkbox" name="ft-tag" value="verified" />
+                Verified</label
+              >
+              <label
+                ><input type="checkbox" name="ft-tag" value="hot" /> Hot</label
+              >
+              <label
+                ><input type="checkbox" name="ft-tag" value="new" /> New</label
+              >
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-reset" id="resetFilters">
+            Reset All Filters
+          </button>
+          <button type="button" class="btn-apply" id="applyFilters">
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Airdrop modal -->
+    <div class="modal-overlay" id="airdropFormModal" aria-hidden="true">
+      <div
+        class="modal modal-form"
+        role="dialog"
+        aria-labelledby="airdropFormTitle"
+      >
+        <div class="modal-header">
+          <h2 id="airdropFormTitle" class="modal-title">Add Airdrop</h2>
+          <button
+            type="button"
+            class="modal-close"
+            id="airdropFormClose"
+            aria-label="Close"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body modal-body-form">
+          <form id="airdropForm" class="airdrop-form">
+            <input type="hidden" id="airdropId" name="id" value="" />
+            <div class="form-row two-cols">
+              <div class="form-group">
+                <label for="airdropName">Name</label>
+                <input
+                  type="text"
+                  id="airdropName"
+                  name="name"
+                  required
+                  placeholder="e.g. Infinex"
+                />
+              </div>
+              <div class="form-group">
+                <label for="airdropCode">Code</label>
+                <input
+                  type="text"
+                  id="airdropCode"
+                  name="code"
+                  placeholder="e.g. INX"
+                />
+              </div>
+            </div>
+            <div
+              id="airdropFormError"
+              class="form-error"
+              aria-live="assertive"
+              style="display: none"
+            ></div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="airdropLink">Link</label>
+                <input
+                  type="url"
+                  id="airdropLink"
+                  name="link"
+                  placeholder="e.g. https://infinex.io"
+                />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="airdropTask">Task</label>
+                <select id="airdropTask" name="task">
+                  <option value="">—</option>
+                  <option value="daily">Daily</option>
+                  <option value="time-based">Time based</option>
+                  <option value="quest">Quest</option>
+                  <option value="whitelist">Whitelist</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group checkbox-group">
+                <label
+                  ><input
+                    type="checkbox"
+                    id="airdropNoTasks"
+                    name="noActiveTasks"
+                  />
+                  No active tasks</label
+                >
+              </div>
+              <div class="form-group checkbox-group">
+                <label
+                  ><input type="checkbox" id="airdropIsNew" name="isNew" /> New
+                  badge</label
+                >
+              </div>
+            </div>
+            <div class="form-section">Task details</div>
+            <div class="form-row three-cols">
+              <div class="form-group">
+                <label for="airdropTaskType">Task Type</label>
+                <select id="airdropTaskType" name="taskType">
+                  <option value="">—</option>
+                  <option value="role">Getting a role</option>
+                  <option value="ambassador">Ambassador</option>
+                  <option value="mainnet">Mainnet</option>
+                  <option value="mint">Mint NFT</option>
+                  <option value="trading">Trading</option>
+                  <option value="social">Social</option>
+                  <option value="predictions">Predictions</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="airdropTaskCost">Cost ($)</label>
+                <input
+                  type="number"
+                  id="airdropTaskCost"
+                  name="taskCost"
+                  min="0"
+                  step="0.01"
+                  placeholder="0"
+                />
+              </div>
+              <div class="form-group">
+                <label for="airdropTaskTime">Time (min)</label>
+                <input
+                  type="number"
+                  id="airdropTaskTime"
+                  name="taskTime"
+                  min="0"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="airdropTaskDesc">Task description</label>
+                <input
+                  type="text"
+                  id="airdropTaskDesc"
+                  name="taskDesc"
+                  placeholder="e.g. Getting a role +4"
+                />
+              </div>
+            </div>
+            <div class="form-section">Status & reward</div>
+            <div class="form-row two-cols">
+              <div class="form-group">
+                <label for="airdropStatus">Status</label>
+                <select id="airdropStatus" name="status">
+                  <option value="reward">Reward Available</option>
+                  <option value="potential">Potential</option>
+                  <option value="confirmed">Confirmed</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="airdropStatusDate">Status date</label>
+                <input
+                  type="text"
+                  id="airdropStatusDate"
+                  name="statusDate"
+                  placeholder="31 Jan 2026"
+                />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="airdropRewardType">Reward Type</label>
+                <select id="airdropRewardType" name="rewardType">
+                  <option value="Airdrop">Airdrop</option>
+                  <option value="Ambassador">Ambassador</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-section">Raise / funds</div>
+            <div class="form-row two-cols">
+              <div class="form-group">
+                <label for="airdropRaise">Raise amount</label>
+                <input
+                  type="text"
+                  id="airdropRaise"
+                  name="raise"
+                  placeholder="e.g. 72.49M"
+                />
+              </div>
+              <div class="form-group">
+                <label for="airdropRaiseCount">Raise count</label>
+                <input
+                  type="number"
+                  id="airdropRaiseCount"
+                  name="raiseCount"
+                  min="0"
+                  value="0"
+                />
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="airdropFormCancel">
+            Cancel
+          </button>
+          <button type="submit" form="airdropForm" class="btn-apply">
+            Save Airdrop
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manage Select Options Modal -->
+    <div class="modal-overlay" id="manageOptionsModal" aria-hidden="true">
+      <div class="modal modal-form" role="dialog" aria-labelledby="manageOptionsTitle">
+        <div class="modal-header">
+          <h2 id="manageOptionsTitle" class="modal-title">Manage Select Options</h2>
+          <button type="button" class="modal-close" id="manageOptionsClose" aria-label="Close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body modal-body-form">
+          <form id="manageOptionsForm" class="manage-options-form">
+            <div class="form-section">Select to Manage</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="selectToManage">Field</label>
+                <select id="selectToManage" name="selectField">
+                  <option value="">—</option>
+                  <option value="airdropTask">Task</option>
+                  <option value="airdropTaskType">Task Type</option>
+                  <option value="airdropStatus">Status</option>
+                  <option value="airdropRewardType">Reward Type</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-section">Current Options</div>
+            <div class="form-group">
+              <div id="optionsList" class="options-list-container"></div>
+            </div>
+
+            <div class="form-section">Add New Option</div>
+            <div class="form-row two-cols">
+              <div class="form-group">
+                <label for="newOptionValue">Value</label>
+                <input type="text" id="newOptionValue" name="newOptionValue" placeholder="e.g. quest" />
+              </div>
+              <div class="form-group">
+                <label for="newOptionText">Display Text</label>
+                <input type="text" id="newOptionText" name="newOptionText" placeholder="e.g. Quest" />
+              </div>
+            </div>
+            <button type="button" class="btn-secondary" id="addOptionBtn">
+              <i class="fas fa-plus"></i> Add Option
+            </button>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="manageOptionsCancel">Cancel</button>
+          <button type="button" class="btn-apply" id="manageOptionsSave">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete All Confirmation Modal -->
+    <div class="modal-overlay" id="deleteAllConfirmModal" aria-hidden="true">
+      <div class="modal" role="dialog" aria-labelledby="deleteAllConfirmTitle">
+        <div class="modal-header">
+          <h2 id="deleteAllConfirmTitle" class="modal-title">Delete All Airdrops</h2>
+          <button type="button" class="modal-close" id="deleteAllConfirmClose" aria-label="Close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <p id="deleteAllConfirmMessage">Are you sure you want to delete all airdrops? This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="deleteAllConfirmCancel">Cancel</button>
+          <button type="button" class="btn-danger" id="deleteAllConfirmOk">
+            <i class="fas fa-trash-alt"></i> Delete All
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete confirmation modal -->
+    <div class="modal-overlay" id="deleteConfirmModal" aria-hidden="true">
+      <div
+        class="modal modal-sm"
+        role="dialog"
+        aria-labelledby="deleteConfirmTitle"
+      >
+        <div class="modal-header">
+          <h2 id="deleteConfirmTitle" class="modal-title">Delete airdrop?</h2>
+          <button
+            type="button"
+            class="modal-close"
+            id="deleteConfirmClose"
+            aria-label="Close"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="deleteConfirmMessage">
+            This will remove the airdrop from the list. This action cannot be
+            undone.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="deleteConfirmCancel">
+            Cancel
+          </button>
+          <button type="button" class="btn-danger" id="deleteConfirmOk">
+            <i class="fas fa-trash-alt"></i> Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Modal (Generic) -->
+    <div class="modal-overlay" id="notificationModal" aria-hidden="true">
+      <div class="modal modal-sm" role="dialog" aria-labelledby="notificationTitle">
+        <div class="modal-header">
+          <h2 id="notificationTitle" class="modal-title">Notification</h2>
+          <button type="button" class="modal-close" id="notificationClose" aria-label="Close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <p id="notificationMessage">Message</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-apply" id="notificationOk">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
