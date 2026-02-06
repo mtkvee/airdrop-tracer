@@ -1019,6 +1019,7 @@ select#airdropConnectType {
   max-height: 240px;
   overflow-y: auto;
   padding: 4px;
+  display: none;
 }
 .custom-multiselect .cms-item {
   display: flex;
@@ -1048,9 +1049,17 @@ select#airdropConnectType {
   font-size: 0.9rem;
 }
 
-/* Ensure custom multiselect works in form groups */
-.form-group .custom-multiselect {
-  width: 100%;
+/* Ensure native multi-selects are completely hidden */
+select#airdropTaskType,
+select#airdropConnectType,
+select#airdropRewardType {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
 }
 
 /* Small screens: adjust icon spacing and stack three-cols to full width */

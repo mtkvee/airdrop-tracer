@@ -44,7 +44,7 @@
         isNew: !!p.isNew,
         status: p.status || 'potential',
         statusDate: p.statusDate || '',
-        rewardType: p.rewardType || 'Airdrop',
+        rewardType: Array.isArray(p.rewardType) ? p.rewardType : (p.rewardType ? [p.rewardType] : ['Airdrop']),
         raise: p.raise || null,
         raiseCount: p.raiseCount != null ? p.raiseCount : 0,
         logos: Array.isArray(p.logos) ? p.logos : [],
@@ -173,7 +173,7 @@
       taskTime: p.taskTime != null ? p.taskTime : '',
       status: p.status || 'potential',
       statusDate: p.statusDate || '',
-      rewardType: p.rewardType || 'Airdrop',
+      rewardType: Array.isArray(p.rewardType) ? p.rewardType.slice() : (p.rewardType ? [p.rewardType] : ['Airdrop']),
       raise: p.raise || '',
       raiseCount: p.raiseCount != null ? p.raiseCount : 0,
     };
@@ -201,7 +201,7 @@
       isNew: !!data.isNew,
       status: data.status || 'potential',
       statusDate: (data.statusDate || '').trim() || '',
-      rewardType: data.rewardType || 'Airdrop',
+      rewardType: Array.isArray(data.rewardType) ? data.rewardType : (data.rewardType ? [data.rewardType] : ['Airdrop']),
       raise: (data.raise || '').trim() || null,
       raiseCount: data.raiseCount != null ? Number(data.raiseCount) : 0,
       logos: existingId ? (PROJECTS.find(function (p) { return p.id === existingId; }) || {}).logos : [],
@@ -577,7 +577,7 @@
   }
 
   function sortAllSelects() {
-    var ids = ['airdropTaskType','airdropConnectType','airdropRewardType','airdropStatus','taskFilter','taskTypeFilter','statusFilter','selectToManage'];
+    var ids = ['airdropTaskType','airdropConnectType','airdropStatus','taskFilter','taskTypeFilter','statusFilter','selectToManage'];
     ids.forEach(function(id){ sortSelectElement(id); });
   }
 
@@ -677,6 +677,8 @@
   function openAirdropFormModal() {
     if (!$airdropFormModal) return;
     syncFilterOptionsWithForm();
+    // Refresh custom multi-select widgets to ensure proper isolation
+    try { if (typeof refreshCustomMultiSelects === 'function') refreshCustomMultiSelects(); } catch (e) {}
     $airdropFormModal.classList.add('open');
     $airdropFormModal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
@@ -720,7 +722,7 @@
       taskTime: taskTimeEl ? taskTimeEl.value : '3',
       status: statusEl ? statusEl.value : 'potential',
       statusDate: statusDateEl ? statusDateEl.value : '',
-      rewardType: rewardTypeEl ? rewardTypeEl.value : 'Airdrop',
+      rewardType: rewardTypeEl ? (rewardTypeEl.multiple ? Array.from(rewardTypeEl.selectedOptions).map(function(o){ return o.value; }) : rewardTypeEl.value) : ['Airdrop'],
       raise: raiseEl ? raiseEl.value : '',
       raiseCount: raiseCountEl ? (raiseCountEl.value !== '' ? Number(raiseCountEl.value) : 0) : 0,
     };
@@ -749,7 +751,7 @@
     set('airdropTaskTime', data.taskTime);
     set('airdropStatus', data.status);
     set('airdropStatusDate', data.statusDate);
-    set('airdropRewardType', data.rewardType);
+    set('airdropRewardType', data.rewardType && Array.isArray(data.rewardType) ? data.rewardType : (data.rewardType ? [data.rewardType] : ['Airdrop']));
     set('airdropRaise', data.raise);
     set('airdropRaiseCount', data.raiseCount);
   }
@@ -768,7 +770,7 @@
       taskTime: '',
       status: 'potential',
       statusDate: '',
-      rewardType: 'Airdrop',
+      rewardType: ['Airdrop'],
       raise: '',
       raiseCount: 0,
     });
@@ -1004,9 +1006,10 @@
   // --- Custom multi-select UI (checkbox-style) ---
   function createOrUpdateCustomMultiSelect(id) {
     var sel = document.getElementById(id);
-    if (!sel) return;
+    if (!sel || !sel.multiple) return; // Only for multiple selects
+    
     // remove previous widget if present
-    var existing = sel.parentNode.querySelector('.custom-multiselect');
+    var existing = sel.parentNode.querySelector('.custom-multiselect[data-select-id="' + id + '"]');
     if (existing) existing.remove();
 
     // hide native select visually but keep it in DOM for form data
@@ -1014,6 +1017,7 @@
 
     var wrapper = document.createElement('div');
     wrapper.className = 'custom-multiselect';
+    wrapper.setAttribute('data-select-id', id); // Mark which select this widget belongs to
 
     var display = document.createElement('button');
     display.type = 'button';
@@ -1031,6 +1035,7 @@
 
     var dropdown = document.createElement('div');
     dropdown.className = 'cms-dropdown';
+    dropdown.style.display = 'none'; // Hidden by default
 
     wrapper.appendChild(display);
     wrapper.appendChild(dropdown);
@@ -1123,7 +1128,7 @@
   }
 
   function refreshCustomMultiSelects() {
-    ['airdropTaskType','airdropConnectType'].forEach(function(id){ createOrUpdateCustomMultiSelect(id); });
+    ['airdropTaskType','airdropConnectType','airdropRewardType'].forEach(function(id){ createOrUpdateCustomMultiSelect(id); });
   }
 
 
