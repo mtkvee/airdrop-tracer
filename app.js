@@ -281,6 +281,16 @@
       const txt = getOptionText('airdropConnectType', c);
       return txt || String(c).toUpperCase();
     }).join(', ') : '—';
+    
+    // Get status label from select options (respects custom edits)
+    const statusLabel = getOptionText('airdropStatus', p.status) || statusCfg.label;
+    
+    // Get reward type labels from select options (respects custom edits)
+    const rewardTypeDisplay = (p.rewardType && p.rewardType.length) ? p.rewardType.map(function(r){
+      const txt = getOptionText('airdropRewardType', r);
+      return txt || r;
+    }).join(', ') : '—';
+    
     const taskCellContent = p.noActiveTasks
       ? `<span class="no-tasks">No active tasks</span>`
       : `
@@ -328,11 +338,11 @@
         </td>
         <td class="col-status">
           <div class="status-cell">
-            <span class="status-label ${statusCfg.class}">${statusCfg.label}</span>
+            <span class="status-label ${statusCfg.class}">${statusLabel}</span>
             <span class="status-date">${p.statusDate}</span>
           </div>
         </td>
-        <td class="col-reward"><span class="reward-type">${p.rewardType}</span></td>
+        <td class="col-reward"><span class="reward-type">${rewardTypeDisplay}</span></td>
         <td class="col-raise"><div class="raise-cell">${raiseCell}</div></td>
         <td class="col-actions">
           <div class="cell-actions">
