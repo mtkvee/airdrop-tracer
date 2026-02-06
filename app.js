@@ -28,14 +28,14 @@
         id: p.id,
         name: p.name || '',
         code: p.code || '',
-        link: p.link || null,
-        logo: p.logo || null,
+        link: p.link || '',
+        logo: p.logo || '',
         initial: (p.name && p.name.charAt(0)) ? p.name.charAt(0).toUpperCase() : '?',
         favorite: !!p.favorite,
-        taskType: p.taskType || p.task || null,
-        connectType: p.connectType || p.taskType || null,
-        taskCost: p.taskCost != null ? p.taskCost : null,
-        taskTime: p.taskTime != null ? p.taskTime : null,
+        taskType: p.taskType || p.task || '',
+        connectType: p.connectType || p.taskType || '',
+        taskCost: p.taskCost != null ? p.taskCost : '0',
+        taskTime: p.taskTime != null ? p.taskTime : '3',
         noActiveTasks: !!p.noActiveTasks,
         isNew: !!p.isNew,
         status: p.status || 'potential',
@@ -223,7 +223,7 @@
   function renderProjectRow(p) {
     const statusCfg = STATUS_CONFIG[p.status] || STATUS_CONFIG.potential;
     const taskTypeDisplay = p.taskType ? p.taskType.charAt(0).toUpperCase() + p.taskType.slice(1) : '—';
-    const connectTypeDisplay = p.connectType ? p.connectType.charAt(0).toUpperCase() + p.connectType.slice(1) : '—';
+    const connectTypeDisplay = p.connectType ? p.connectType.toUpperCase() : '—';
     const taskCellContent = p.noActiveTasks
       ? `<span class="no-tasks">No active tasks</span>`
       : `
