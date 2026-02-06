@@ -282,7 +282,7 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="airdropTaskType">Task Type</label>
-                <select id="airdropTaskType" name="taskType">
+                <select id="airdropTaskType" name="taskType" multiple size="4">
                   <option value="">—</option>
                   <option value="daily">Daily</option>
                   <option value="time-based">Time based</option>
@@ -315,7 +315,12 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="airdropConnectType">Connect Type</label>
-                <select id="airdropConnectType" name="connectType">
+                <select
+                  id="airdropConnectType"
+                  name="connectType"
+                  multiple
+                  size="4"
+                >
                   <option value="">—</option>
                   <option value="evm">EVM</option>
                   <option value="gmail">Gmail</option>

@@ -36,8 +36,8 @@
         logo: p.logo || '',
         initial: (p.name && p.name.charAt(0)) ? p.name.charAt(0).toUpperCase() : '?',
         favorite: !!p.favorite,
-        taskType: p.taskType || p.task || '',
-        connectType: p.connectType || p.taskType || '',
+        taskType: Array.isArray(p.taskType) ? p.taskType : (p.taskType ? [p.taskType] : (p.task ? (Array.isArray(p.task) ? p.task : [p.task]) : [])),
+        connectType: Array.isArray(p.connectType) ? p.connectType : (p.connectType ? [p.connectType] : []),
         taskCost: p.taskCost != null ? p.taskCost : '0',
         taskTime: p.taskTime != null ? p.taskTime : '3',
         noActiveTasks: !!p.noActiveTasks,
@@ -165,10 +165,10 @@
       name: p.name,
       code: p.code,
       link: p.link || '',
-      taskType: p.taskType || '',
+      taskType: Array.isArray(p.taskType) ? p.taskType.slice() : (p.taskType ? [p.taskType] : []),
       noActiveTasks: p.noActiveTasks,
       isNew: p.isNew,
-      connectType: p.connectType || '',
+      connectType: Array.isArray(p.connectType) ? p.connectType.slice() : (p.connectType ? [p.connectType] : []),
       taskCost: p.taskCost != null ? p.taskCost : '',
       taskTime: p.taskTime != null ? p.taskTime : '',
       status: p.status || 'potential',
@@ -193,8 +193,8 @@
       logo: null,
       initial: initial,
       favorite: existingId ? (PROJECTS.find(function (p) { return p.id === existingId; }) || {}).favorite : false,
-      taskType: data.taskType || null,
-      connectType: data.connectType || null,
+      taskType: Array.isArray(data.taskType) ? data.taskType : (data.taskType ? [data.taskType] : []),
+      connectType: Array.isArray(data.connectType) ? data.connectType : (data.connectType ? [data.connectType] : []),
       taskCost: data.taskCost !== '' && data.taskCost != null ? Number(data.taskCost) : 0,
       taskTime: data.taskTime !== '' && data.taskTime != null ? Number(data.taskTime) : 3,
       noActiveTasks: noActive,
@@ -259,8 +259,21 @@
 
   function renderProjectRow(p) {
     const statusCfg = STATUS_CONFIG[p.status] || STATUS_CONFIG.potential;
-    const taskTypeDisplay = p.taskType ? p.taskType.charAt(0).toUpperCase() + p.taskType.slice(1) : '—';
-    const connectTypeDisplay = p.connectType ? p.connectType.toUpperCase() : '—';
+    function getOptionText(selectId, val) {
+      try {
+        const sel = document.getElementById(selectId);
+        if (!sel) return val || '';
+        const opt = Array.from(sel.options).find(function(o){ return o.value === val; });
+        return opt ? opt.text : (val != null ? String(val) : '');
+      } catch (e) { return val || ''; }
+    }
+
+    const taskTypeDisplay = (p.taskType && p.taskType.length) ? p.taskType.map(function(t){ return String(t).charAt(0).toUpperCase() + String(t).slice(1); }).join(', ') : '—';
+    const connectTypeDisplay = (p.connectType && p.connectType.length) ? p.connectType.map(function(c){
+      // Use the display text from the form select if available to preserve casing
+      const txt = getOptionText('airdropConnectType', c);
+      return txt || String(c).toUpperCase();
+    }).join(', ') : '—';
     const taskCellContent = p.noActiveTasks
       ? `<span class="no-tasks">No active tasks</span>`
       : `
@@ -335,10 +348,12 @@
         const match = (p.name + ' ' + p.code).toLowerCase().includes(search);
         if (!match) return false;
       }
-      if (taskType && p.taskType !== taskType) return false;
-      if (connectType && p.connectType !== connectType && !(connectType && p.noActiveTasks)) {
+      if (taskType) {
+        if (!p.taskType || !Array.isArray(p.taskType) || !p.taskType.includes(taskType)) return false;
+      }
+      if (connectType) {
         if (p.noActiveTasks) return false;
-        if (p.connectType !== connectType) return false;
+        if (!p.connectType || !Array.isArray(p.connectType) || !p.connectType.includes(connectType)) return false;
       }
       if (status && p.status !== status) return false;
 
@@ -535,6 +550,8 @@
       opt.text = o.text;
       selectEl.appendChild(opt);
     });
+    // rebuild custom widget if present
+    try { if (typeof refreshCustomMultiSelects === 'function') refreshCustomMultiSelects(); } catch (e) {}
   }
 
   // Sort DOM select element options alphabetically (preserve empty first option if present)
@@ -695,10 +712,10 @@
       name: nameEl ? nameEl.value : '',
       code: codeEl ? codeEl.value : '',
       link: linkEl ? linkEl.value : '',
-      taskType: taskTypeEl ? taskTypeEl.value : '',
+      taskType: taskTypeEl ? (taskTypeEl.multiple ? Array.from(taskTypeEl.selectedOptions).map(function(o){ return o.value; }) : taskTypeEl.value) : [],
       noActiveTasks: noTasksEl ? noTasksEl.checked : false,
       isNew: isNewEl ? isNewEl.checked : false,
-      connectType: connectTypeEl ? connectTypeEl.value : '',
+      connectType: connectTypeEl ? (connectTypeEl.multiple ? Array.from(connectTypeEl.selectedOptions).map(function(o){ return o.value; }) : connectTypeEl.value) : [],
       taskCost: taskCostEl ? taskCostEl.value : '0',
       taskTime: taskTimeEl ? taskTimeEl.value : '3',
       status: statusEl ? statusEl.value : 'potential',
@@ -714,7 +731,11 @@
       const el = document.getElementById(id);
       if (!el) return;
       if (el.type === 'checkbox') el.checked = !!value;
-      else el.value = value != null ? value : '';
+      else if (el.multiple) {
+        // value expected to be an array
+        var vals = Array.isArray(value) ? value : (value != null && value !== '' ? [String(value)] : []);
+        Array.from(el.options).forEach(function(o){ o.selected = vals.indexOf(o.value) >= 0; });
+      } else el.value = value != null ? value : '';
     };
     set('airdropId', data.id);
     set('airdropName', data.name);
@@ -980,6 +1001,132 @@
     });
   }
 
+  // --- Custom multi-select UI (checkbox-style) ---
+  function createOrUpdateCustomMultiSelect(id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    // remove previous widget if present
+    var existing = sel.parentNode.querySelector('.custom-multiselect');
+    if (existing) existing.remove();
+
+    // hide native select visually but keep it in DOM for form data
+    sel.style.display = 'none';
+
+    var wrapper = document.createElement('div');
+    wrapper.className = 'custom-multiselect';
+
+    var display = document.createElement('button');
+    display.type = 'button';
+    display.className = 'cms-display';
+    display.setAttribute('aria-haspopup', 'listbox');
+
+    var valuesSpan = document.createElement('div');
+    valuesSpan.className = 'cms-values';
+    display.appendChild(valuesSpan);
+
+    var caret = document.createElement('span');
+    caret.className = 'cms-caret';
+    caret.innerHTML = '&#x25BE;';
+    display.appendChild(caret);
+
+    var dropdown = document.createElement('div');
+    dropdown.className = 'cms-dropdown';
+
+    wrapper.appendChild(display);
+    wrapper.appendChild(dropdown);
+
+    // build items
+    function rebuild() {
+      dropdown.innerHTML = '';
+      var opts = Array.from(sel.options || []);
+      var emptyText = '';
+      opts.forEach(function(o, i) {
+        if (i === 0 && o.value === '') emptyText = o.text;
+      });
+      var nonEmpty = opts.filter(function(o){ return o.value !== ''; });
+      if (!nonEmpty.length) {
+        var pe = document.createElement('div');
+        pe.className = 'cms-empty';
+        pe.textContent = emptyText || 'No options';
+        dropdown.appendChild(pe);
+      } else {
+        nonEmpty.forEach(function(o){
+          var item = document.createElement('div');
+          item.className = 'cms-item';
+          item.setAttribute('data-value', o.value);
+          var cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = !!o.selected;
+          cb.tabIndex = -1;
+          var lbl = document.createElement('span');
+          lbl.className = 'cms-label';
+          lbl.textContent = o.text;
+          item.appendChild(cb);
+          item.appendChild(lbl);
+          // click toggles
+          item.addEventListener('click', function(e){
+            e.stopPropagation();
+            var val = item.getAttribute('data-value');
+            var matching = Array.from(sel.options).find(function(x){ return x.value === val; });
+            if (!matching) return;
+            matching.selected = !matching.selected;
+            cb.checked = matching.selected;
+            // trigger native change
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+            updateDisplay();
+          });
+          dropdown.appendChild(item);
+        });
+      }
+    }
+
+    function updateDisplay() {
+      var selected = Array.from(sel.selectedOptions || []).filter(function(o){ return o.value !== ''; });
+      if (selected.length) {
+        valuesSpan.textContent = selected.map(function(o){ return o.text; }).join(', ');
+      } else {
+        // show placeholder from first empty option
+        var placeholder = (sel.options && sel.options[0] && sel.options[0].value === '') ? sel.options[0].text : '—';
+        valuesSpan.textContent = placeholder;
+      }
+      // update checkboxes in dropdown to reflect current selection
+      Array.from(dropdown.querySelectorAll('.cms-item')).forEach(function(it){
+        var v = it.getAttribute('data-value');
+        var opt = Array.from(sel.options).find(function(o){ return o.value === v; });
+        var cb = it.querySelector('input[type="checkbox"]');
+        if (opt && cb) cb.checked = !!opt.selected;
+      });
+    }
+
+    // toggle dropdown
+    display.addEventListener('click', function(e){
+      e.stopPropagation();
+      var open = wrapper.classList.toggle('open');
+      dropdown.style.display = open ? 'block' : 'none';
+    });
+
+    // when underlying select changes (external updates), rebuild and update
+    sel.addEventListener('change', function(){ rebuild(); updateDisplay(); });
+
+    // close on outside click
+    document.addEventListener('click', function closeHandler(){
+      if (wrapper.classList.contains('open')) {
+        wrapper.classList.remove('open');
+        dropdown.style.display = 'none';
+      }
+    });
+
+    // insert after select
+    sel.parentNode.insertBefore(wrapper, sel.nextSibling);
+    rebuild();
+    updateDisplay();
+  }
+
+  function refreshCustomMultiSelects() {
+    ['airdropTaskType','airdropConnectType'].forEach(function(id){ createOrUpdateCustomMultiSelect(id); });
+  }
+
+
   function initSort() {
     document.querySelectorAll('.data-table th.sortable').forEach(function (th) {
       th.addEventListener('click', function () {
@@ -1077,6 +1224,7 @@
       saveToLocalStorage();
       syncFilterOptionsWithForm();
     }
+    try { if (typeof refreshCustomMultiSelects === 'function') refreshCustomMultiSelects(); } catch(e) {}
     closeManageOptionsModal();
   });
   if ($manageOptionsClose) $manageOptionsClose.addEventListener('click', closeManageOptionsModal);
@@ -1104,6 +1252,8 @@
   initModalCategories();
   initSort();
   initCustomOptions();
+  // initialize custom styled multi-select widgets
+  try { if (typeof refreshCustomMultiSelects === 'function') refreshCustomMultiSelects(); } catch (e) {}
   syncFilterOptionsWithForm();
   // ensure all selects are alphabetically ordered on startup
   sortAllSelects();
