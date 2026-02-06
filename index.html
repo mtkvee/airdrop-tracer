@@ -4,9 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Airdrop Tracker</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="favicon/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="favicon/favicon-16x16.png"
+    />
     <link rel="manifest" href="favicon/site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,7 +35,7 @@
     />
   </head>
   <body>
-    <h1>Airdrop Tracker<span style="font-size: 0.85rem;">(v0.1)</span></h1>
+    <h1>Airdrop Tracker<span style="font-size: 0.85rem">(v0.1)</span></h1>
     <h3>by <a href="https://t.me/mgveec" target="_blank">Vee</a></h3>
     <div class="app">
       <!-- Top header -->
@@ -268,8 +282,8 @@
                   <option value="time-based">Time based</option>
                   <option value="quest">Quest</option>
                   <option value="whitelist">Whitelist</option>
-                    <option value="retro">Retro</option>
-                    <option value="galxe">Galxe</option>
+                  <option value="retro">Retro</option>
+                  <option value="galxe">Galxe</option>
                 </select>
               </div>
             </div>
@@ -292,7 +306,7 @@
               </div>
             </div>
             <div class="form-section">Task details</div>
-            <div class="form-row three-cols">
+            <div class="form-row">
               <div class="form-group">
                 <label for="airdropConnectType">Connect Type</label>
                 <select id="airdropConnectType" name="connectType">
@@ -305,6 +319,8 @@
                   <option value="x">X</option>
                 </select>
               </div>
+            </div>
+            <div class="form-row two-cols">
               <div class="form-group">
                 <label for="airdropTaskCost">Cost ($)</label>
                 <input
@@ -397,10 +413,23 @@
 
     <!-- Manage Select Options Modal -->
     <div class="modal-overlay" id="manageOptionsModal" aria-hidden="true">
-      <div class="modal modal-form" role="dialog" aria-labelledby="manageOptionsTitle">
+      <div
+        class="modal modal-form"
+        role="dialog"
+        aria-labelledby="manageOptionsTitle"
+      >
         <div class="modal-header">
-          <h2 id="manageOptionsTitle" class="modal-title">Manage Select Options</h2>
-          <button type="button" class="modal-close" id="manageOptionsClose" aria-label="Close"><i class="fas fa-times"></i></button>
+          <h2 id="manageOptionsTitle" class="modal-title">
+            Manage Select Options
+          </h2>
+          <button
+            type="button"
+            class="modal-close"
+            id="manageOptionsClose"
+            aria-label="Close"
+          >
+            <i class="fas fa-times"></i>
+          </button>
         </div>
         <div class="modal-body modal-body-form">
           <form id="manageOptionsForm" class="manage-options-form">
@@ -427,22 +456,38 @@
             <div class="form-row two-cols">
               <div class="form-group">
                 <label for="newOptionValue">Value</label>
-                <input type="text" id="newOptionValue" name="newOptionValue" placeholder="e.g. quest" />
+                <input
+                  type="text"
+                  id="newOptionValue"
+                  name="newOptionValue"
+                  placeholder="e.g. quest"
+                />
               </div>
               <div class="form-group">
                 <label for="newOptionText">Display Text</label>
-                <input type="text" id="newOptionText" name="newOptionText" placeholder="e.g. Quest" />
+                <input
+                  type="text"
+                  id="newOptionText"
+                  name="newOptionText"
+                  placeholder="e.g. Quest"
+                />
               </div>
             </div>
-            <p class="add-option-message">Fill Value & Display Text first, then click "Add Option".</p>
+            <p class="add-option-message">
+              Fill Value & Display Text first, then click "Add Option".
+            </p>
             <button type="button" class="btn-secondary" id="addOptionBtn">
               <i class="fas fa-plus"></i> Add Option
             </button>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn-secondary" id="manageOptionsCancel">Cancel</button>
-          <button type="button" class="btn-apply" id="manageOptionsSave">Save Changes</button>
+          <button type="button" class="btn-secondary" id="manageOptionsCancel">
+            Cancel
+          </button>
+          <button type="button" class="btn-apply" id="manageOptionsSave">
+            Save Changes
+          </button>
         </div>
       </div>
     </div>
@@ -451,14 +496,32 @@
     <div class="modal-overlay" id="deleteAllConfirmModal" aria-hidden="true">
       <div class="modal" role="dialog" aria-labelledby="deleteAllConfirmTitle">
         <div class="modal-header">
-          <h2 id="deleteAllConfirmTitle" class="modal-title">Delete All Airdrops</h2>
-          <button type="button" class="modal-close" id="deleteAllConfirmClose" aria-label="Close"><i class="fas fa-times"></i></button>
+          <h2 id="deleteAllConfirmTitle" class="modal-title">
+            Delete All Airdrops
+          </h2>
+          <button
+            type="button"
+            class="modal-close"
+            id="deleteAllConfirmClose"
+            aria-label="Close"
+          >
+            <i class="fas fa-times"></i>
+          </button>
         </div>
         <div class="modal-body">
-          <p id="deleteAllConfirmMessage">Are you sure you want to delete all airdrops? This action cannot be undone.</p>
+          <p id="deleteAllConfirmMessage">
+            Are you sure you want to delete all airdrops? This action cannot be
+            undone.
+          </p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn-secondary" id="deleteAllConfirmCancel">Cancel</button>
+          <button
+            type="button"
+            class="btn-secondary"
+            id="deleteAllConfirmCancel"
+          >
+            Cancel
+          </button>
           <button type="button" class="btn-danger" id="deleteAllConfirmOk">
             <i class="fas fa-trash-alt"></i> Delete All
           </button>
@@ -503,16 +566,29 @@
 
     <!-- Notification Modal (Generic) -->
     <div class="modal-overlay" id="notificationModal" aria-hidden="true">
-      <div class="modal modal-sm" role="dialog" aria-labelledby="notificationTitle">
+      <div
+        class="modal modal-sm"
+        role="dialog"
+        aria-labelledby="notificationTitle"
+      >
         <div class="modal-header">
           <h2 id="notificationTitle" class="modal-title">Notification</h2>
-          <button type="button" class="modal-close" id="notificationClose" aria-label="Close"><i class="fas fa-times"></i></button>
+          <button
+            type="button"
+            class="modal-close"
+            id="notificationClose"
+            aria-label="Close"
+          >
+            <i class="fas fa-times"></i>
+          </button>
         </div>
         <div class="modal-body">
           <p id="notificationMessage">Message</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn-apply" id="notificationOk">OK</button>
+          <button type="button" class="btn-apply" id="notificationOk">
+            OK
+          </button>
         </div>
       </div>
     </div>
