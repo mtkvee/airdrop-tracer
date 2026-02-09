@@ -10,8 +10,14 @@ export default function HomePage() {
 
   return (
     <>
+      <div className="auth-status-banner is-hidden" id="authStatusBar" role="status" aria-live="polite">
+        <div className="auth-status">
+          <span className="auth-status-icon" id="authStatusIcon" aria-hidden="true"></span>
+          <span className="auth-status-text" id="authStatusText"></span>
+        </div>
+      </div>
       <h1 className="app-title">
-        Airdrop Tracker <span className="app-version">(v0.1)</span>
+        Airdrop Tracer <span className="app-version">(v0.1)</span>
       </h1>
       <div className="social-icons">
         <a className="social-icon" href="https://x.com/vee_mtk" target="_blank" rel="noreferrer">
@@ -20,8 +26,17 @@ export default function HomePage() {
       </div>
       <div className="app">
         <header className="header">
-          <div className="header-right">
-            <div className="right-above">
+          <div className="auth-bar">
+              <button type="button" className="btn-auth" id="signInBtn" aria-label="Sign in with Google">
+                <i className="fa-brands fa-google"></i> Sign in
+              </button>
+              <div className="auth-user is-hidden" id="authUser"></div>
+              <button type="button" className="btn-auth btn-auth-ghost is-hidden" id="signOutBtn" aria-label="Sign out">
+                Sign out
+              </button>
+            </div>
+          <div className="header-actions">
+            <div className="header-main-actions-btns">
               <button type="button" className="btn-add-airdrop" id="addAirdropBtn" aria-label="Add airdrop">
                 <i className="fas fa-plus"></i> Add
               </button>
@@ -44,7 +59,7 @@ export default function HomePage() {
                 <i className="fas fa-trash"></i>
               </button>
             </div>
-            <div className="right-below">
+            <div className="header-data-actions-btns">
               <div className='data-import-export'>
                 <button
                   type="button"
@@ -76,7 +91,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <div className="header-left">
+          <div className="header-filters">
             <div className="search-wrap">
               <i className="fas fa-search search-icon"></i>
               <input
@@ -263,7 +278,7 @@ export default function HomePage() {
                 <div className="form-group">
                   <label htmlFor="airdropRewardType">Reward Type</label>
                   <select id="airdropRewardType" name="rewardType" multiple size={4}>
-                    <option value=""></option>
+                    <option value="">--</option>
                     <option value="Airdrop">Airdrop</option>
                     <option value="Ambassador">Ambassador</option>
                     <option value="XP">XP</option>

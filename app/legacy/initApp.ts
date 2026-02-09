@@ -1,4 +1,11 @@
-// @ts-nocheck
+﻿// @ts-nocheck
+import { initFirebase } from '../lib/firebase';
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
+import { ensureArray, ensureArrayOr, escapeHtml, formatRelativeTime, sanitizeUrl } from './utils';
+import { normalizeProjects } from './normalize';
+import { mergePayloads } from './merge';
+
 export function initApp() {
   'use strict';
 
@@ -18,18 +25,6 @@ export function initApp() {
 
   function on(el, event, handler) {
     if (el) el.addEventListener(event, handler);
-  }
-
-  function ensureArray(value) {
-    if (Array.isArray(value)) return value;
-    if (value == null || value === '') return [];
-    return [value];
-  }
-
-  function ensureArrayOr(value, fallback) {
-    const arr = ensureArray(value);
-    if (arr.length) return arr;
-    return Array.isArray(fallback) ? fallback.slice() : [];
   }
 
   function setModalState(modal, open) {
@@ -59,42 +54,33 @@ export function initApp() {
     }
   }
 
-  function normalizeProjects(list) {
-    return list.map(function (p) {
-      const taskTypeSource = (p.taskType != null && p.taskType !== '') ? p.taskType : p.task;
-      return {
-        id: p.id,
-        name: p.name || '',
-        code: p.code || '',
-        link: p.link || '',
-        logo: p.logo || '',
-        initial: (p.name && p.name.charAt(0)) ? p.name.charAt(0).toUpperCase() : '?',
-        favorite: !!p.favorite,
-        taskType: ensureArray(taskTypeSource),
-        connectType: ensureArray(p.connectType),
-        taskCost: p.taskCost != null ? p.taskCost : '0',
-        taskTime: p.taskTime != null ? p.taskTime : '3',
-        noActiveTasks: !!p.noActiveTasks,
-        isNew: !!p.isNew,
-        status: p.status || 'potential',
-        statusDate: p.statusDate || '',
-        rewardType: ensureArrayOr(p.rewardType, ['Airdrop']),
-        raise: p.raise || null,
-        raiseCount: p.raiseCount != null ? p.raiseCount : 0,
-        logos: Array.isArray(p.logos) ? p.logos : [],
-        lastEdited: p.lastEdited || p.createdAt || Date.now(),
-      };
-    });
+  function buildPayload() {
+    return {
+      projects: PROJECTS,
+      customOptions: CUSTOM_OPTIONS,
+      lastUpdatedAt: LAST_UPDATED_AT,
+      savedAt: Date.now(),
+    };
   }
 
-  function saveToLocalStorage() {
+  function saveToLocalStorage(skipCloud) {
     try {
-      const payload = { projects: PROJECTS, customOptions: CUSTOM_OPTIONS, lastUpdatedAt: LAST_UPDATED_AT, savedAt: Date.now() };
+      const payload = buildPayload();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      if (!skipCloud) queueCloudSave(payload);
     } catch (e) {}
   }
 
   let PROJECTS = loadFromLocalStorage();
+  let CLOUD_ENABLED = false;
+  let CLOUD_AUTH = null;
+  let CLOUD_DB = null;
+  let CLOUD_USER = null;
+  let CLOUD_SAVE_TIMER = null;
+  let CLOUD_SYNCING = false;
+  let LAST_SIGNED_OUT_AT = 0;
+  let CLOUD_UNSUBSCRIBE = null;
+  let IGNORE_REMOTE_APPLY = false;
 
   const STATUS_CONFIG = {
     reward: { label: 'Reward Available', class: 'reward' },
@@ -107,6 +93,7 @@ export function initApp() {
   let sortDir = 'asc';
   let deleteConfirmId = null;
   let viewMode = 'all';
+  let LAST_TABLE_HTML = '';
 
   const $tableBody = byId('tableBody');
   const $searchInput = byId('searchInput');
@@ -162,24 +149,12 @@ export function initApp() {
   const $notificationClose = byId('notificationClose');
   const $notificationOk = byId('notificationOk');
   const $lastUpdatedTime = byId('lastUpdatedTime');
-
-  function formatRelativeTime(timestamp) {
-    if (!timestamp) return 'Never';
-    const now = Date.now();
-    const diff = now - timestamp;
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (seconds < 60) return 'Just now';
-    if (minutes < 60) return minutes === 1 ? '1 minute ago' : minutes + ' minutes ago';
-    if (hours < 24) return hours === 1 ? '1 hour ago' : hours + ' hours ago';
-    if (days < 7) return days === 1 ? '1 day ago' : days + ' days ago';
-    
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
-  }
+  const $signInBtn = byId('signInBtn');
+  const $signOutBtn = byId('signOutBtn');
+  const $authUser = byId('authUser');
+  const $authStatusBar = byId('authStatusBar');
+  const $authStatusText = byId('authStatusText');
+  const $authStatusIcon = byId('authStatusIcon');
 
   function updateLastUpdatedTime() {
     LAST_UPDATED_AT = Date.now();
@@ -193,6 +168,172 @@ export function initApp() {
     if ($lastUpdatedTime) {
       $lastUpdatedTime.textContent = formatRelativeTime(LAST_UPDATED_AT);
     }
+  }
+
+  function setAuthStatus(message, tone) {
+    if ($authStatusBar) {
+      if (message) {
+        if ($authStatusText) $authStatusText.textContent = message;
+        $authStatusBar.classList.remove('is-hidden');
+      } else {
+        if ($authStatusText) $authStatusText.textContent = '';
+        $authStatusBar.classList.add('is-hidden');
+      }
+      $authStatusBar.classList.remove('auth-status--muted', 'auth-status--success', 'auth-status--error');
+      if (tone) $authStatusBar.classList.add('auth-status--' + tone);
+    }
+    if ($authStatusIcon) {
+      var iconClass = 'fa-circle-info';
+      if (tone === 'success') iconClass = 'fa-circle-check';
+      else if (tone === 'error') iconClass = 'fa-circle-xmark';
+      $authStatusIcon.innerHTML = '<i class="fas ' + iconClass + '"></i>';
+    }
+  }
+
+  function setAuthUi(user) {
+    if ($signInBtn) {
+      const hideSignIn = !CLOUD_ENABLED || !!user;
+      $signInBtn.classList.toggle('is-hidden', hideSignIn);
+      $signInBtn.disabled = !CLOUD_ENABLED;
+      $signInBtn.style.display = hideSignIn ? 'none' : '';
+    }
+    if ($signOutBtn) $signOutBtn.classList.toggle('is-hidden', !user);
+    if ($authUser) {
+      if (user) {
+        const label = user.displayName || user.email || 'Signed in';
+        $authUser.textContent = label;
+        $authUser.classList.remove('is-hidden');
+        $authUser.style.display = '';
+      } else {
+        $authUser.textContent = '';
+        $authUser.classList.add('is-hidden');
+        $authUser.style.display = 'none';
+      }
+    }
+    if ($signOutBtn) {
+      const showSignOut = !!user;
+      $signOutBtn.classList.toggle('is-hidden', !showSignOut);
+      $signOutBtn.style.display = showSignOut ? '' : 'none';
+    }
+  }
+
+  function getCloudDocRef(uid) {
+    if (!CLOUD_DB || !uid) return null;
+    return doc(CLOUD_DB, 'users', uid, 'airdrop', 'state');
+  }
+
+  function applyPayload(payload) {
+    if (!payload) return;
+    const list = Array.isArray(payload) ? payload : (payload.projects || []);
+    try { CUSTOM_OPTIONS = payload.customOptions || {}; } catch (e) { CUSTOM_OPTIONS = {}; }
+    LAST_UPDATED_AT = payload.lastUpdatedAt || 0;
+    PROJECTS = normalizeProjects(list);
+    initCustomOptions();
+    syncFilterOptionsWithForm();
+    updateLastUpdatedDisplay();
+    saveToLocalStorage(true);
+    applyFiltersFromState();
+  }
+
+  async function readCloudState(uid) {
+    const ref = getCloudDocRef(uid);
+    if (!ref) return null;
+    try {
+      const snap = await getDoc(ref);
+      return snap.exists() ? snap.data() : null;
+    } catch (err) {
+      setAuthStatus('Cloud read failed', 'error');
+      return null;
+    }
+  }
+
+  async function writeCloudState(payload) {
+    if (!CLOUD_DB || !CLOUD_USER) return;
+    const ref = getCloudDocRef(CLOUD_USER.uid);
+    if (!ref) return;
+    try {
+      CLOUD_SYNCING = true;
+      setAuthStatus('Syncing...!', 'muted');
+      await setDoc(
+        ref,
+        {
+          ...payload,
+          serverUpdatedAt: serverTimestamp(),
+          uid: CLOUD_USER.uid,
+        },
+        { merge: true }
+      );
+      CLOUD_SYNCING = false;
+      setAuthStatus('Synced!', 'success');
+    } catch (err) {
+      CLOUD_SYNCING = false;
+      setAuthStatus('Sync failed!', 'error');
+    }
+  }
+
+  async function syncFromCloud(user) {
+    if (!user) return;
+    setAuthStatus('Checking...!', 'muted');
+    const cloudPayload = await readCloudState(user.uid);
+    const cloudUpdated = cloudPayload && cloudPayload.lastUpdatedAt ? Number(cloudPayload.lastUpdatedAt) : 0;
+    const localUpdated = Number(LAST_UPDATED_AT || 0);
+    if (!cloudPayload) {
+      setAuthStatus('Cloud ready (local data)', 'muted');
+      if (PROJECTS.length || Object.keys(CUSTOM_OPTIONS || {}).length) {
+        queueCloudSave(buildPayload());
+      }
+      return;
+    }
+    if (cloudUpdated === 0 && localUpdated === 0) {
+      setAuthStatus('Synced!', 'success');
+      return;
+    }
+    var merged = mergePayloads(buildPayload(), cloudPayload);
+    applyPayload(merged);
+    queueCloudSave(merged);
+    setAuthStatus('Synced!', 'success');
+  }
+
+  function attachCloudListener(user) {
+    if (!CLOUD_DB || !user) return;
+    if (CLOUD_UNSUBSCRIBE) {
+      try { CLOUD_UNSUBSCRIBE(); } catch (e) {}
+      CLOUD_UNSUBSCRIBE = null;
+    }
+    const ref = getCloudDocRef(user.uid);
+    if (!ref) return;
+    CLOUD_UNSUBSCRIBE = onSnapshot(ref, function (snap) {
+      if (!snap.exists()) return;
+      if (IGNORE_REMOTE_APPLY) return;
+      const data = snap.data();
+      const remoteUpdated = Number(data && data.lastUpdatedAt || 0);
+      const localUpdated = Number(LAST_UPDATED_AT || 0);
+      if (remoteUpdated > localUpdated) {
+        IGNORE_REMOTE_APPLY = true;
+        applyPayload(data);
+        setAuthStatus('Updated!', 'success');
+        setTimeout(function () { IGNORE_REMOTE_APPLY = false; }, 300);
+      }
+    });
+  }
+
+  function detachCloudListener() {
+    if (CLOUD_UNSUBSCRIBE) {
+      try { CLOUD_UNSUBSCRIBE(); } catch (e) {}
+      CLOUD_UNSUBSCRIBE = null;
+    }
+  }
+
+  function queueCloudSave(payload) {
+    if (!CLOUD_ENABLED || !CLOUD_DB || !CLOUD_USER) return;
+    const data = payload || buildPayload();
+    if (CLOUD_SAVE_TIMER) clearTimeout(CLOUD_SAVE_TIMER);
+    CLOUD_SAVE_TIMER = setTimeout(function () {
+      CLOUD_SAVE_TIMER = null;
+      IGNORE_REMOTE_APPLY = true;
+      writeCloudState(data);
+      setTimeout(function () { IGNORE_REMOTE_APPLY = false; }, 300);
+    }, 300);
   }
 
 
@@ -214,7 +355,7 @@ export function initApp() {
       taskTime: p.taskTime != null ? p.taskTime : '',
       status: p.status || 'potential',
       statusDate: p.statusDate || '',
-      rewardType: ensureArrayOr(p.rewardType, ['Airdrop']).slice(),
+      rewardType: ensureArrayOr(p.rewardType, []).slice(),
       raise: p.raise || '',
       raiseCount: p.raiseCount != null ? p.raiseCount : 0,
     };
@@ -242,7 +383,7 @@ export function initApp() {
       isNew: !!data.isNew,
       status: data.status || 'potential',
       statusDate: (data.statusDate || '').trim() || '',
-      rewardType: ensureArrayOr(data.rewardType, ['Airdrop']),
+      rewardType: ensureArrayOr(data.rewardType, []),
       raise: (data.raise || '').trim() || null,
       raiseCount: data.raiseCount != null ? Number(data.raiseCount) : 0,
       logos: existingId ? (PROJECTS.find(function (p) { return p.id === existingId; }) || {}).logos : [],
@@ -255,6 +396,7 @@ export function initApp() {
     PROJECTS.push(p);
     updateLastUpdatedTime();
     applyFiltersFromState();
+    queueCloudSave(buildPayload());
   }
 
   function updateProject(id, data) {
@@ -267,6 +409,7 @@ export function initApp() {
     PROJECTS[idx] = p;
     updateLastUpdatedTime();
     applyFiltersFromState();
+    queueCloudSave(buildPayload());
   }
 
   function deleteProject(id) {
@@ -275,6 +418,7 @@ export function initApp() {
     PROJECTS.splice(idx, 1);
     updateLastUpdatedTime();
     applyFiltersFromState();
+    queueCloudSave(buildPayload());
   }
 
   function deleteAllProjects() {
@@ -297,6 +441,7 @@ export function initApp() {
     PROJECTS = [];
     updateLastUpdatedTime();
     applyFiltersFromState();
+    queueCloudSave(buildPayload());
     closeDeleteAllConfirmModal();
   }
 
@@ -311,12 +456,12 @@ export function initApp() {
       } catch (e) { return val || ''; }
     }
 
-    const taskTypeDisplay = (p.taskType && p.taskType.length) ? p.taskType.map(function(t){ return String(t).charAt(0).toUpperCase() + String(t).slice(1); }).join(', ') : '--';
+    const taskTypeDisplay = (p.taskType && p.taskType.length) ? p.taskType.map(function(t){ return String(t).charAt(0).toUpperCase() + String(t).slice(1); }).join(', ') : '';
     const connectTypeDisplay = (p.connectType && p.connectType.length) ? p.connectType.map(function(c){
       // Use the display text from the form select if available to preserve casing
       const txt = getOptionText('airdropConnectType', c);
       return txt || String(c).toUpperCase();
-    }).join(', ') : '--';
+    }).join(', ') : '';
     
     // Get status label from select options (respects custom edits)
     const statusLabel = getOptionText('airdropStatus', p.status) || statusCfg.label;
@@ -325,7 +470,17 @@ export function initApp() {
     const rewardTypeDisplay = (p.rewardType && p.rewardType.length) ? p.rewardType.map(function(r){
       const txt = getOptionText('airdropRewardType', r);
       return txt || r;
-    }).join(', ') : '--';
+    }).join(', ') : '';
+
+    const safeName = escapeHtml(p.name || '');
+    const safeCode = escapeHtml(p.code || '');
+    const safeStatusLabel = escapeHtml(statusLabel || '');
+    const safeStatusDate = escapeHtml(p.statusDate || '');
+    const safeTaskTypeDisplay = escapeHtml(taskTypeDisplay || '--');
+    const safeConnectTypeDisplay = escapeHtml(connectTypeDisplay || '--');
+    const safeRewardTypeDisplay = escapeHtml(rewardTypeDisplay || '--');
+    const safeRaise = escapeHtml(p.raise || '');
+    const safeLink = sanitizeUrl(p.link);
     
     const taskCellContent = p.noActiveTasks
       ? `<span class="no-tasks">No active tasks</span>`
@@ -334,11 +489,11 @@ export function initApp() {
           <span class="cost">Cost: $${p.taskCost}</span>
           <span class="time">Time: ${p.taskTime} min</span>
         </span>
-        <span class="task-desc">${connectTypeDisplay}</span>
+        <span class="task-desc">${safeConnectTypeDisplay}</span>
       `;
     const raiseCell = p.raise
       ? `
-        <span class="raise-amount">$ ${p.raise}</span>
+        <span class="raise-amount">$ ${safeRaise}</span>
         ${p.logos && p.logos.length ? `<div class="raise-avatars">${p.logos.map((_, i) => `<span class="placeholder-logo" style="width:24px;height:24px;font-size:0.7rem;margin-left:${i === 0 ? 0 : -8}px">${String.fromCharCode(65 + i)}</span>`).join('')}</div>` : ''}
         <span class="raise-count">+${p.raiseCount}</span>
       `
@@ -357,8 +512,8 @@ export function initApp() {
               <i class="${p.favorite ? 'fas' : 'far'} fa-star"></i>
             </button>
             <div class="project-info">
-              <a href="${p.link || '#'}" target="_blank" rel="noopener noreferrer" class="project-link" ${!p.link ? 'onclick="return false"' : ''}>
-                <div class="name">${p.name} <span class="code">${p.code}</span></div>
+              <a href="${safeLink || '#'}" target="_blank" rel="noopener noreferrer" class="project-link" ${!safeLink ? 'onclick="return false"' : ''}>
+                <div class="name">${safeName} <span class="code">${safeCode}</span></div>
               </a>
               
             </div>
@@ -366,7 +521,7 @@ export function initApp() {
         </td>
         <td class="col-task">
           <div class="cell-task">
-            <span class="task-badge">${taskTypeDisplay}</span>
+            <span class="task-badge">${safeTaskTypeDisplay}</span>
           </div>
         </td>
         <td class="col-tasktype">
@@ -374,11 +529,11 @@ export function initApp() {
         </td>
         <td class="col-status">
           <div class="status-cell">
-            <span class="status-label ${statusCfg.class}">${statusLabel}</span>
-            <span class="status-date">${p.statusDate}</span>
+            <span class="status-label ${statusCfg.class}">${safeStatusLabel}</span>
+            <span class="status-date">${safeStatusDate}</span>
           </div>
         </td>
-        <td class="col-reward"><span class="reward-type">${rewardTypeDisplay}</span></td>
+        <td class="col-reward"><span class="reward-type">${safeRewardTypeDisplay}</span></td>
         <td class="col-raise"><div class="raise-cell">${raiseCell}</div></td>
         <td class="col-actions">
           <div class="cell-actions">
@@ -449,7 +604,10 @@ export function initApp() {
 
   function renderTable() {
     if (!$tableBody) return;
-    $tableBody.innerHTML = filteredProjects.map(renderProjectRow).join('');
+    const nextHtml = filteredProjects.map(renderProjectRow).join('');
+    if (nextHtml === LAST_TABLE_HTML) return;
+    LAST_TABLE_HTML = nextHtml;
+    $tableBody.innerHTML = nextHtml;
   }
 
   function handleTableClick(e) {
@@ -759,12 +917,6 @@ export function initApp() {
     }
   }
 
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
   function openAirdropFormModal() {
     if (!$airdropFormModal) return;
     syncFilterOptionsWithForm();
@@ -837,7 +989,7 @@ export function initApp() {
     set('airdropTaskTime', data.taskTime);
     set('airdropStatus', data.status);
     set('airdropStatusDate', data.statusDate);
-    set('airdropRewardType', data.rewardType && Array.isArray(data.rewardType) ? data.rewardType : (data.rewardType ? [data.rewardType] : ['Airdrop']));
+    set('airdropRewardType', data.rewardType && Array.isArray(data.rewardType) ? data.rewardType : (data.rewardType ? [data.rewardType] : []));
     set('airdropRaise', data.raise);
     set('airdropRaiseCount', data.raiseCount);
   }
@@ -856,7 +1008,7 @@ export function initApp() {
       taskTime: '',
       status: 'potential',
       statusDate: '',
-      rewardType: ['Airdrop'],
+      rewardType: [],
       raise: '',
       raiseCount: 0,
     });
@@ -1111,7 +1263,7 @@ export function initApp() {
         valuesSpan.textContent = selected.map(function(o){ return o.text; }).join(', ');
       } else {
         // show placeholder from first empty option
-        var placeholder = (sel.options && sel.options[0] && sel.options[0].value === '') ? sel.options[0].text : '--';
+        var placeholder = (sel.options && sel.options[0] && sel.options[0].value === '') ? sel.options[0].text : '  ';
         valuesSpan.textContent = placeholder;
       }
       // update checkboxes in dropdown to reflect current selection
@@ -1165,6 +1317,32 @@ export function initApp() {
         sortProjects();
         renderTable();
       });
+    });
+  }
+
+  function initCloudSync() {
+    const firebase = initFirebase();
+    if (!firebase || !firebase.enabled) {
+      setAuthStatus('Sync disabled!', 'muted');
+      setAuthUi(null);
+      return;
+    }
+    CLOUD_ENABLED = true;
+    CLOUD_AUTH = firebase.auth;
+    CLOUD_DB = firebase.db;
+    setAuthUi(null);
+    setAuthStatus('Sign in to sync!', 'muted');
+    onAuthStateChanged(CLOUD_AUTH, function (user) {
+      CLOUD_USER = user;
+      setAuthUi(user);
+      if (!user) {
+        LAST_SIGNED_OUT_AT = Date.now();
+        detachCloudListener();
+        setAuthStatus('Store locally, sign in to sync!', 'muted');
+        return;
+      }
+      syncFromCloud(user);
+      attachCloudListener(user);
     });
   }
 
@@ -1296,6 +1474,31 @@ export function initApp() {
   on($exportBtn, 'click', exportData);
   on($importBtn, 'click', function () { if ($importFileInput) $importFileInput.click(); });
   on($importFileInput, 'change', handleImportFile);
+  on($signInBtn, 'click', function () {
+    if (!CLOUD_AUTH) return;
+    const provider = new GoogleAuthProvider();
+    try { provider.setCustomParameters({ prompt: 'select_account' }); } catch (e) {}
+    signInWithPopup(CLOUD_AUTH, provider)
+      .then(function (result) {
+        if (result && result.user) {
+          CLOUD_USER = result.user;
+          setAuthUi(result.user);
+          syncFromCloud(result.user);
+        }
+      })
+      .catch(function () {
+        setAuthStatus('Google sign-in failed', 'error');
+        showNotification('Sign-in Error', 'Google sign-in was canceled or failed.');
+      });
+  });
+  on($signOutBtn, 'click', function () {
+    if (!CLOUD_AUTH) return;
+    LAST_SIGNED_OUT_AT = Date.now();
+    signOut(CLOUD_AUTH).catch(function () {
+      setAuthStatus('Sign-out failed', 'error');
+      showNotification('Sign-out Error', 'Could not sign out. Please try again.');
+    });
+  });
 
 
   on($notificationClose, 'click', closeNotificationModal);
@@ -1306,6 +1509,7 @@ export function initApp() {
 
   initSort();
   initCustomOptions();
+  initCloudSync();
   // initialize custom styled multi-select widgets
   try { if (typeof refreshCustomMultiSelects === 'function') refreshCustomMultiSelects(); } catch (e) {}
   syncFilterOptionsWithForm();
@@ -1317,6 +1521,13 @@ export function initApp() {
   setInterval(updateLastUpdatedDisplay, 60000);
   applyFiltersFromState();
 }
+
+
+
+
+
+
+
 
 
 

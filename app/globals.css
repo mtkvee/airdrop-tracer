@@ -131,7 +131,7 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
   padding: 0.75rem 0;
   margin-bottom: 1rem;
@@ -141,7 +141,7 @@ button {
   box-shadow: var(--shadow-sm);
 }
 
-.header-left {
+.header-filters {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -301,24 +301,152 @@ button {
   border-color: var(--color-border-strong);
 }
 
-.header-right {
+.header-actions {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
 }
 
-.right-above,
+.auth-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-auth {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-strong);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-auth:hover {
+  background: var(--color-bg);
+  border-color: var(--color-border-strong);
+}
+
+.btn-auth-ghost {
+  background: var(--color-surface-muted);
+  border-color: var(--color-border-strong);
+}
+
+.auth-user {
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-text-strong);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.auth-status--success {
+  color: var(--color-success);
+}
+
+.auth-status--error {
+  color: var(--color-danger);
+}
+
+.auth-status--muted {
+  color: var(--color-muted);
+}
+
+.auth-status-banner {
+  position: sticky;
+  top: 0;
+  z-index: 1200;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--color-surface);
+  color: var(--color-text-strong);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.auth-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.auth-status-text {
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auth-status-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.auth-status-banner.auth-status--success {
+  color: var(--color-success);
+}
+
+.auth-status-banner.auth-status--error {
+  color: var(--color-danger);
+}
+
+.auth-status-banner.auth-status--muted {
+  color: var(--color-muted);
+}
+
+.auth-status-banner.auth-status--success .auth-status-icon {
+  background: rgba(52, 199, 89, 0.15);
+  color: var(--color-success);
+}
+
+.auth-status-banner.auth-status--error .auth-status-icon {
+  background: rgba(255, 59, 48, 0.15);
+  color: var(--color-danger);
+}
+
+.auth-status-banner.auth-status--muted .auth-status-icon {
+  background: rgba(134, 134, 139, 0.15);
+  color: var(--color-muted);
+}
+
+.header-main-actions-btns,
 .data-import-export {
   display: flex;
   gap: 0.25rem;
 }
 
-.right-below {
+.header-main-actions-btns {
+  margin-bottom: 0.25rem;
+}
+
+.header-data-actions-btns {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.75rem;
 }
 
 .tabs {
@@ -1111,7 +1239,7 @@ select#airdropConnectType {
 }
 .custom-multiselect .cms-display {
   width: 100%;
-  padding: 0.5rem 0.75rem;
+  padding: 0.7rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -1368,7 +1496,7 @@ select#airdropRewardType {
     font-size: 0.85rem;
   }
 
-  .header-right {
+  .header-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -1382,11 +1510,11 @@ select#airdropRewardType {
 
 /* Narrow screens: stack header controls for better UX */
 @media (max-width: 600px) {
-  /* .header-right {
+  /* .header-actions {
     align-items: stretch;
   } */
-  .right-above,
-  .right-below {
+  .header-main-actions-btns,
+  .header-data-actions-btns {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1394,7 +1522,7 @@ select#airdropRewardType {
     width: 100%;
   }
 
-  .right-above > button {
+  .header-main-actions-btns > button {
     width: auto;
     flex: 0 0 auto;
     justify-content: center;
