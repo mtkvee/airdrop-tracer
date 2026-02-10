@@ -77,7 +77,7 @@ label {
 
 button {
   color: var(--color-text);
-  font-weight: bold;
+  /* font-weight: bold; */
 }
 
 /* Enforce Inter font for all elements */
@@ -464,7 +464,6 @@ button {
   gap: 0.5rem;
 }
 
-
 .tabs {
   display: flex;
   background: var(--color-primary-soft);
@@ -492,7 +491,6 @@ button {
 .tab-active:hover {
   color: var(--color-white-80);
 }
-
 
 .btn-add-airdrop {
   display: inline-flex;
@@ -1107,13 +1105,11 @@ button {
   font-weight: 600;
 }
 
-
 .modal-body {
   padding: 1rem 1.5rem;
   overflow-y: auto;
   flex: 1;
 }
-
 
 .modal-footer {
   display: flex;
@@ -1269,7 +1265,6 @@ select#airdropConnectType {
   gap: 0.5rem;
   font-size: 0.95rem;
   color: var(--color-text);
-  font-weight: 600;
   text-align: left;
 }
 .custom-multiselect .cms-display:hover {
@@ -1282,7 +1277,6 @@ select#airdropConnectType {
 }
 .custom-multiselect .cms-values {
   color: var(--color-text);
-  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1333,7 +1327,6 @@ select#airdropConnectType {
 }
 .custom-multiselect .cms-item .cms-label {
   color: var(--color-text);
-  font-weight: 600;
   font-size: 0.9rem;
 }
 .custom-multiselect .cms-empty {
@@ -1358,7 +1351,6 @@ select#airdropRewardType {
 /* Small screens: adjust icon spacing and stack three-cols to full width */
 @media (max-width: 600px) {
   .header-main-actions-btns,
-
   .header-main-actions-btns > button {
     width: auto;
     flex: 0 0 auto;
@@ -1452,7 +1444,6 @@ select#airdropRewardType {
   border-radius: var(--radius-sm);
   font-size: 0.95rem;
   color: var(--color-text);
-  font-weight: 600;
 }
 .manage-options-form input:focus,
 .manage-options-form select:focus {
