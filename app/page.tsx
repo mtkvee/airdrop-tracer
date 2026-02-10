@@ -26,7 +26,7 @@ export default function HomePage() {
         </div>
       </div>
       <h1 className="app-title">
-        Airdrop Tracer <span className="app-version">(v0.1)</span>
+        Airdrop Tracer <span className="app-version">(v0.2)</span>
       </h1>
       <div className="social-icons">
         <a
@@ -36,6 +36,7 @@ export default function HomePage() {
           rel="noreferrer"
         >
           <i className="fa-brands fa-x-twitter"></i>
+          <span>Vee</span>
         </a>
       </div>
       <div className="app">
@@ -162,6 +163,22 @@ export default function HomePage() {
             <span className="last-updated-text">
               Last updated: <span id="lastUpdatedTime">Just now</span>
             </span>
+            <div className="task-count-dropdown" id="taskCountDropdown">
+              <button
+                type="button"
+                className="task-count-trigger"
+                id="taskCountTrigger"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+              >
+                Task Count <i className="fas fa-chevron-down"></i>
+              </button>
+              <div
+                className="task-count-menu"
+                id="taskCountMenu"
+                role="listbox"
+              ></div>
+            </div>
           </div>
           <div className="table-wrap">
             <table className="data-table">
@@ -171,19 +188,16 @@ export default function HomePage() {
                     Name <i className="fas fa-sort"></i>
                   </th>
                   <th className="col-task sortable" data-sort="task">
-                    Task Type
+                    Task
                   </th>
                   <th className="col-tasktype sortable" data-sort="connectType">
-                    Connect Type
+                    Connect
                   </th>
                   <th className="col-status sortable" data-sort="status">
-                    Updated Status
+                    Status
                   </th>
                   <th className="col-reward sortable" data-sort="reward">
-                    Reward Type
-                  </th>
-                  <th className="col-raise sortable" data-sort="raise">
-                    Raise/Funds
+                    Reward
                   </th>
                   <th className="col-actions col-actions-header">Actions</th>
                 </tr>
@@ -255,7 +269,7 @@ export default function HomePage() {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="airdropTaskType">Task Type</label>
+                  <label htmlFor="airdropTaskType">Task</label>
                   <select
                     id="airdropTaskType"
                     name="taskType"
@@ -270,28 +284,10 @@ export default function HomePage() {
                   </select>
                 </div>
               </div>
-              <div className="form-row">
-                <div className="form-group checkbox-group">
-                  <label>
-                    <input
-                      type="checkbox"
-                      id="airdropNoTasks"
-                      name="noActiveTasks"
-                    />{" "}
-                    No active tasks
-                  </label>
-                </div>
-                <div className="form-group checkbox-group">
-                  <label>
-                    <input type="checkbox" id="airdropIsNew" name="isNew" /> New
-                    badge
-                  </label>
-                </div>
-              </div>
               <div className="form-section">Task details</div>
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="airdropConnectType">Connect Type</label>
+                  <label htmlFor="airdropConnectType">Connect</label>
                   <select
                     id="airdropConnectType"
                     name="connectType"
@@ -351,9 +347,9 @@ export default function HomePage() {
                   />
                 </div>
               </div>
-              <div className="form-row">
+              <div className="form-row reward-form-row">
                 <div className="form-group">
-                  <label htmlFor="airdropRewardType">Reward Type</label>
+                  <label htmlFor="airdropRewardType">Reward</label>
                   <select
                     id="airdropRewardType"
                     name="rewardType"
@@ -368,28 +364,6 @@ export default function HomePage() {
                     <option value="NFT">NFT</option>
                     <option value="Whitelist">Whitelist</option>
                   </select>
-                </div>
-              </div>
-              <div className="form-section">Raise / funds</div>
-              <div className="form-row two-cols">
-                <div className="form-group">
-                  <label htmlFor="airdropRaise">Raise amount</label>
-                  <input
-                    type="text"
-                    id="airdropRaise"
-                    name="raise"
-                    placeholder="e.g. 72.49M"
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="airdropRaiseCount">Raise count</label>
-                  <input
-                    type="number"
-                    id="airdropRaiseCount"
-                    name="raiseCount"
-                    min="0"
-                    defaultValue={0}
-                  />
                 </div>
               </div>
             </form>
@@ -432,7 +406,7 @@ export default function HomePage() {
           <div className="modal-body modal-body-form">
             <div className="filter-modal-grid">
               <label className="filter-modal-field">
-                <span>Task Type</span>
+                <span>Task</span>
                 <select className="filter-select" id="taskFilter">
                   <option value="">All</option>
                   <option value="daily">Daily</option>
@@ -444,7 +418,7 @@ export default function HomePage() {
                 </select>
               </label>
               <label className="filter-modal-field">
-                <span>Connect Type</span>
+                <span>Connect</span>
                 <select className="filter-select" id="taskTypeFilter">
                   <option value="">All</option>
                   <option value="evm">EVM</option>
@@ -503,10 +477,10 @@ export default function HomePage() {
                 <div className="form-group">
                   <label htmlFor="selectToManage">Field</label>
                   <select id="selectToManage" name="selectField">
-                    <option value="airdropTaskType">Task Type</option>
-                    <option value="airdropConnectType">Connect Type</option>
+                    <option value="airdropTaskType">Task</option>
+                    <option value="airdropConnectType">Connect</option>
                     <option value="airdropStatus">Status</option>
-                    <option value="airdropRewardType">Reward Type</option>
+                    <option value="airdropRewardType">Reward</option>
                   </select>
                 </div>
               </div>

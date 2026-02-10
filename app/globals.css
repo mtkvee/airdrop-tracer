@@ -59,6 +59,27 @@ body {
   min-height: 100vh;
 }
 
+/* Headings, buttons, and labels use base text color + bold */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--color-text);
+  font-weight: bold;
+}
+
+label {
+  color: var(--color-text);
+  font-weight: bold;
+}
+
+button {
+  color: var(--color-text);
+  font-weight: bold;
+}
+
 /* Enforce Inter font for all elements */
 html,
 body,
@@ -83,10 +104,6 @@ h1 {
   font-size: 1.8rem;
   font-weight: 700;
   margin: 2rem 0 1rem 0;
-}
-
-.app-title,
-.social-icons {
   text-align: center;
 }
 
@@ -99,11 +116,17 @@ h1 {
 }
 
 .social-icons {
-  margin-bottom: 1rem;
+  text-align: center;
 }
 
-.social-icons .social-icon:first-child {
-  margin-right: 0.3rem;
+.social-icons a {
+  text-decoration: none;
+}
+
+.social-icons span {
+  margin-left: 0.1rem;
+  font-size: 1.05rem;
+  font-weight: 600;
 }
 
 .social-icon {
@@ -183,11 +206,6 @@ button {
 }
 .search-input:focus {
   outline: none;
-}
-.search-dropdown {
-  color: var(--color-muted);
-  font-size: 0.7rem;
-  margin-left: 0.25rem;
 }
 
 .filter-bar {
@@ -285,7 +303,8 @@ button {
 
 .filter-modal-field span {
   font-weight: 500;
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 .btn-import-export {
@@ -348,7 +367,8 @@ button {
   padding: 0.3rem 0.6rem;
   border-radius: 999px;
   background: var(--color-primary-soft);
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -374,7 +394,8 @@ button {
   font-size: 0.85rem;
   font-weight: 600;
   background: var(--color-surface);
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
   border-bottom: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
   display: flex;
@@ -443,11 +464,6 @@ button {
   gap: 0.5rem;
 }
 
-.header-data-actions-btns {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
 
 .tabs {
   display: flex;
@@ -466,7 +482,8 @@ button {
   cursor: pointer;
 }
 .tab:hover {
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
 }
 .tab-active {
   background: var(--color-primary-strong);
@@ -476,40 +493,6 @@ button {
   color: var(--color-white-80);
 }
 
-.pagination-nav {
-  display: flex;
-  gap: 2px;
-}
-.nav-arrow {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-muted);
-  cursor: pointer;
-}
-.nav-arrow:hover {
-  background: var(--color-bg);
-  color: var(--color-text-strong);
-}
-
-.user-icon {
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--color-muted);
-  font-size: 1.5rem;
-  cursor: pointer;
-}
-.user-icon:hover {
-  color: var(--color-text-strong);
-}
 
 .btn-add-airdrop {
   display: inline-flex;
@@ -545,11 +528,11 @@ button {
   position: fixed;
   right: 1.25rem;
   bottom: 1.25rem;
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   border: none;
   border-radius: 999px;
-  background: var(--color-text-strong);
+  background: var(--color-accent-star);
   color: var(--color-white);
   display: inline-flex;
   align-items: center;
@@ -566,7 +549,7 @@ button {
   z-index: 1400;
 }
 .back-to-top:hover {
-  background: #111;
+  background: var(--color-accent-star-hover);
 }
 .back-to-top.is-visible {
   opacity: 1;
@@ -682,6 +665,76 @@ button {
   gap: 0.25rem;
 }
 
+.task-count-dropdown {
+  position: relative;
+  margin-left: 0.25rem;
+}
+
+.task-count-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.task-count-trigger:hover {
+  background: var(--color-bg);
+}
+
+.task-count-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 0.5rem;
+  display: none;
+  z-index: 20;
+}
+
+.task-count-dropdown.open .task-count-menu {
+  display: block;
+}
+
+.task-count-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.task-count-item:hover {
+  background: var(--color-bg);
+}
+
+.task-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
 .main .table-wrap {
   overflow-y: visible;
 }
@@ -719,7 +772,8 @@ button {
   user-select: none;
 }
 .data-table th.sortable:hover {
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
 }
 .data-table th i {
   margin-left: 0.25rem;
@@ -840,7 +894,8 @@ button {
 }
 .task-meta {
   font-size: 0.85rem;
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
 }
 .task-meta .cost {
   color: var(--color-success);
@@ -940,7 +995,7 @@ button {
   text-align: right;
 }
 .col-actions-header {
-  text-align: center;
+  text-align: center !important;
 }
 .cell-actions {
   display: flex;
@@ -962,7 +1017,8 @@ button {
 }
 .btn-action:hover {
   background: var(--color-border);
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
 }
 .btn-action.edit:hover {
   color: var(--color-primary);
@@ -1030,7 +1086,8 @@ button {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
 }
 .modal-close {
   width: 36px;
@@ -1046,16 +1103,10 @@ button {
 }
 .modal-close:hover {
   background: var(--color-border);
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
 }
 
-.modal-tab-underline {
-  height: 3px;
-  background: var(--color-primary);
-  margin: 0 1.5rem;
-  border-radius: 2px;
-  width: 60px;
-}
 
 .modal-body {
   padding: 1rem 1.5rem;
@@ -1063,69 +1114,6 @@ button {
   flex: 1;
 }
 
-.filter-categories {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.filter-category {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  padding: 0.9rem 0;
-  border: none;
-  background: none;
-  font-size: 1rem;
-  color: var(--color-text-strong);
-  text-align: left;
-  cursor: pointer;
-  border-bottom: 1px solid var(--color-divider);
-}
-.filter-category:hover {
-  background: var(--color-surface-muted);
-}
-.filter-category i:first-child {
-  color: var(--color-muted);
-  width: 1.25rem;
-  text-align: center;
-}
-.filter-category span {
-  flex: 1;
-}
-.category-arrow {
-  color: var(--color-muted);
-  font-size: 0.75rem;
-  transition: transform 0.2s;
-}
-.filter-category.expanded .category-arrow {
-  transform: rotate(180deg);
-}
-
-.filter-category-content {
-  display: none;
-  padding: 0.5rem 0 1rem 2.5rem;
-  border-bottom: 1px solid var(--color-divider);
-  gap: 0.5rem;
-  flex-direction: column;
-}
-.filter-category-content.open {
-  display: flex;
-}
-.filter-category-content label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-size: 0.95rem;
-  color: var(--color-text-strong);
-}
-.filter-category-content input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--color-primary);
-}
 
 .modal-footer {
   display: flex;
@@ -1171,7 +1159,8 @@ button {
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -1205,7 +1194,7 @@ button {
 }
 .modal-body-form {
   max-height: 55vh;
-  padding: 1.5rem 1.5rem;
+  padding: 0.75rem 1.5rem 1.5rem;
 }
 .form-error {
   font-size: 0.85rem;
@@ -1231,7 +1220,8 @@ button {
   margin-bottom: 0.35rem;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
 }
 .airdrop-form input[type="text"],
 .airdrop-form input[type="number"],
@@ -1241,8 +1231,8 @@ button {
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  font-size: 0.95rem;
-  color: var(--color-text-strong);
+  font-size: 0.9rem;
+  color: var(--color-text);
 }
 
 /* Ensure selects in forms have a consistent custom dropdown icon and spacing */
@@ -1278,7 +1268,8 @@ select#airdropConnectType {
   justify-content: space-between;
   gap: 0.5rem;
   font-size: 0.95rem;
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
   text-align: left;
 }
 .custom-multiselect .cms-display:hover {
@@ -1290,7 +1281,8 @@ select#airdropConnectType {
   box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.2);
 }
 .custom-multiselect .cms-values {
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1340,7 +1332,8 @@ select#airdropConnectType {
   flex-shrink: 0;
 }
 .custom-multiselect .cms-item .cms-label {
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
   font-size: 0.9rem;
 }
 .custom-multiselect .cms-empty {
@@ -1365,13 +1358,6 @@ select#airdropRewardType {
 /* Small screens: adjust icon spacing and stack three-cols to full width */
 @media (max-width: 600px) {
   .header-main-actions-btns,
-  .header-data-actions-btns {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-  }
 
   .header-main-actions-btns > button {
     width: auto;
@@ -1421,6 +1407,10 @@ select#airdropRewardType {
   grid-template-columns: 1fr 1fr 1fr;
   gap: 1rem;
 }
+.reward-form-row {
+  margin-bottom: 0;
+}
+
 .form-group {
   margin-bottom: 0;
 }
@@ -1451,7 +1441,8 @@ select#airdropRewardType {
   margin-bottom: 0.4rem;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
 }
 .manage-options-form input[type="text"],
 .manage-options-form select {
@@ -1460,7 +1451,8 @@ select#airdropRewardType {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: 0.95rem;
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
 }
 .manage-options-form input:focus,
 .manage-options-form select:focus {
@@ -1505,7 +1497,8 @@ select#airdropRewardType {
   margin-bottom: 0.35rem;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 .edit-option-form input[type="text"] {
@@ -1514,7 +1507,8 @@ select#airdropRewardType {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: 0.95rem;
-  color: var(--color-text-strong);
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 .edit-option-form input:focus {

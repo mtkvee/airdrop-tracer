@@ -1,30 +1,49 @@
 // @ts-nocheck
 import { ensureArray, ensureArrayOr } from './utils';
 
+const MAX_ARRAY = 20;
+const MAX_NAME = 80;
+const MAX_CODE = 20;
+const MAX_LINK = 2048;
+const MAX_STATUS_DATE = 40;
+
+function clampString(value, max) {
+  const str = value == null ? '' : String(value);
+  return str.length > max ? str.slice(0, max) : str;
+}
+
+function clampArray(values, max) {
+  return values.slice(0, max).map(function (v) { return clampString(v, 32); });
+}
+
+function toNumber(value, fallback) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
 export function normalizeProjects(list) {
   return (list || []).map(function (p) {
     const taskTypeSource = (p.taskType != null && p.taskType !== '') ? p.taskType : p.task;
+    const taskType = clampArray(ensureArray(taskTypeSource), MAX_ARRAY);
+    const connectType = clampArray(ensureArray(p.connectType), MAX_ARRAY);
+    const rewardType = clampArray(ensureArrayOr(p.rewardType, []), MAX_ARRAY);
     return {
-      id: p.id,
-      name: p.name || '',
-      code: p.code || '',
-      link: p.link || '',
+      id: toNumber(p.id, Date.now()),
+      name: clampString(p.name, MAX_NAME),
+      code: clampString(p.code, MAX_CODE),
+      link: clampString(p.link, MAX_LINK),
       logo: p.logo || '',
       initial: (p.name && p.name.charAt(0)) ? p.name.charAt(0).toUpperCase() : '?',
       favorite: !!p.favorite,
-      taskType: ensureArray(taskTypeSource),
-      connectType: ensureArray(p.connectType),
-      taskCost: p.taskCost != null ? p.taskCost : '0',
-      taskTime: p.taskTime != null ? p.taskTime : '3',
-      noActiveTasks: !!p.noActiveTasks,
-      isNew: !!p.isNew,
-      status: p.status || 'potential',
-      statusDate: p.statusDate || '',
-      rewardType: ensureArrayOr(p.rewardType, []),
-      raise: p.raise || null,
-      raiseCount: p.raiseCount != null ? p.raiseCount : 0,
-      logos: Array.isArray(p.logos) ? p.logos : [],
-      lastEdited: p.lastEdited || p.createdAt || Date.now(),
+      taskType: taskType,
+      connectType: connectType,
+      taskCost: toNumber(p.taskCost, 0),
+      taskTime: toNumber(p.taskTime, 3),
+      status: clampString(p.status || 'potential', 24),
+      statusDate: clampString(p.statusDate, MAX_STATUS_DATE),
+      rewardType: rewardType,
+      logos: Array.isArray(p.logos) ? p.logos.slice(0, 10) : [],
+      lastEdited: toNumber(p.lastEdited || p.createdAt, Date.now()),
     };
   });
 }

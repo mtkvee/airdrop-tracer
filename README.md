@@ -12,7 +12,7 @@ Airdrop Tracer helps crypto users track, verify, and organize airdrops across wa
 1. **See airdrop status at a glance**
    A clear status system with visible last-updated time.
 2. **Add or edit an airdrop**
-   Keep task, connect type, status, reward, and raise details in one place.
+   Keep task, connect, status, and reward details in one place.
 3. **Filter and search**
    Find new or high-priority items quickly.
 4. **Sync and back up**
@@ -30,6 +30,10 @@ Airdrop Tracer helps crypto users track, verify, and organize airdrops across wa
 - **React** for UI
 - **Firebase** for data and configuration
 - **Vercel Speed Insights** for performance metrics
+
+## Security
+- Firestore rules are defined in `firestore.rules`. Deploy them with the Firebase CLI.
+- Basic CSP and security headers are set in `next.config.js`.
 
 ## Getting Started
 ```bash

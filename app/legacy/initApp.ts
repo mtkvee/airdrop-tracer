@@ -23,6 +23,17 @@ export function initApp() {
     return document.getElementById(id) as any;
   }
 
+  function getOptionTextBySelect(selectId, val) {
+    try {
+      const sel = byId(selectId) as HTMLSelectElement | null;
+      if (!sel) return val || '';
+      const opt = Array.from(sel.options).find(function (o) { return o.value === val; });
+      return opt ? opt.text : (val != null ? String(val) : '');
+    } catch (e) {
+      return val || '';
+    }
+  }
+
   function on(el, event, handler) {
     if (el) el.addEventListener(event, handler);
   }
@@ -163,6 +174,9 @@ export function initApp() {
   const $authStatusText = byId('authStatusText');
   const $authStatusIcon = byId('authStatusIcon');
   const $backToTopBtn = byId('backToTopBtn');
+  const $taskCountDropdown = byId('taskCountDropdown');
+  const $taskCountTrigger = byId('taskCountTrigger');
+  const $taskCountMenu = byId('taskCountMenu');
 
   function updateLastUpdatedTime() {
     LAST_UPDATED_AT = Date.now();
@@ -182,6 +196,31 @@ export function initApp() {
     if (!$backToTopBtn) return;
     const shouldShow = window.scrollY > 400;
     $backToTopBtn.classList.toggle('is-visible', shouldShow);
+  }
+
+  function renderTaskCounters() {
+    if (!$taskCountMenu) return;
+    const counts = {};
+    PROJECTS.forEach(function (p) {
+      ensureArray(p.taskType).forEach(function (t) {
+        if (!t) return;
+        counts[t] = (counts[t] || 0) + 1;
+      });
+    });
+    const keys = Object.keys(counts);
+    if (!keys.length) {
+      $taskCountMenu.innerHTML = '<div class="task-count-item">No tasks</div>';
+      return;
+    }
+    keys.sort(function (a, b) {
+      return String(a).localeCompare(String(b), 'en', { sensitivity: 'base' });
+    });
+    $taskCountMenu.innerHTML = keys
+      .map(function (k) {
+        const label = getOptionTextBySelect('airdropTaskType', k) || k;
+        return '<div class="task-count-item"><span>' + escapeHtml(label) + '</span><span class="task-count-badge">' + counts[k] + '</span></div>';
+      })
+      .join('');
   }
 
   function setAuthStatus(message, tone) {
@@ -267,7 +306,7 @@ export function initApp() {
     if (!ref) return;
     try {
       CLOUD_SYNCING = true;
-      setAuthStatus('Cloud syncing...', 'muted');
+      setAuthStatus('Cloud syncing', 'muted');
       await setDoc(
         ref,
         {
@@ -278,10 +317,10 @@ export function initApp() {
         { merge: true }
       );
       CLOUD_SYNCING = false;
-      setAuthStatus('Cloud synced...', 'success');
+      setAuthStatus('Cloud synced', 'success');
     } catch (err) {
       CLOUD_SYNCING = false;
-      setAuthStatus('Cloud sync failed...', 'error');
+      setAuthStatus('Cloud sync failed', 'error');
     }
   }
 
@@ -299,13 +338,13 @@ export function initApp() {
       return;
     }
     if (cloudUpdated === 0 && localUpdated === 0) {
-      setAuthStatus('Cloud synced...', 'success');
+      setAuthStatus('Cloud synced', 'success');
       return;
     }
     var merged = mergePayloads(buildPayload(), cloudPayload);
     applyPayload(merged);
     queueCloudSave(merged);
-    setAuthStatus('Cloud synced...', 'success');
+    setAuthStatus('Cloud synced', 'success');
   }
 
   function attachCloudListener(user) {
@@ -362,16 +401,12 @@ export function initApp() {
       code: p.code,
       link: p.link || '',
       taskType: ensureArray(p.taskType).slice(),
-      noActiveTasks: p.noActiveTasks,
-      isNew: p.isNew,
       connectType: ensureArray(p.connectType).slice(),
       taskCost: p.taskCost != null ? p.taskCost : '',
       taskTime: p.taskTime != null ? p.taskTime : '',
       status: p.status || 'potential',
       statusDate: p.statusDate || '',
       rewardType: ensureArrayOr(p.rewardType, []).slice(),
-      raise: p.raise || '',
-      raiseCount: p.raiseCount != null ? p.raiseCount : 0,
     };
   }
 
@@ -379,7 +414,6 @@ export function initApp() {
     const id = existingId || getNextId();
     const name = (data.name || '').trim();
     const initial = name ? name.charAt(0).toUpperCase() : '?';
-    const noActive = !!data.noActiveTasks;
     const now = Date.now();
     return {
       id: id,
@@ -393,13 +427,9 @@ export function initApp() {
       connectType: ensureArray(data.connectType),
       taskCost: data.taskCost !== '' && data.taskCost != null ? Number(data.taskCost) : 0,
       taskTime: data.taskTime !== '' && data.taskTime != null ? Number(data.taskTime) : 3,
-      noActiveTasks: noActive,
-      isNew: !!data.isNew,
       status: data.status || 'potential',
       statusDate: (data.statusDate || '').trim() || '',
       rewardType: ensureArrayOr(data.rewardType, []),
-      raise: (data.raise || '').trim() || null,
-      raiseCount: data.raiseCount != null ? Number(data.raiseCount) : 0,
       logos: existingId ? (PROJECTS.find(function (p) { return p.id === existingId; }) || {}).logos : [],
       lastEdited: now,
     };
@@ -461,28 +491,19 @@ export function initApp() {
 
   function renderProjectRow(p) {
     const statusCfg = STATUS_CONFIG[p.status] || STATUS_CONFIG.potential;
-    function getOptionText(selectId, val) {
-      try {
-        const sel = byId(selectId) as HTMLSelectElement | null;
-        if (!sel) return val || '';
-        const opt = Array.from(sel.options).find(function(o){ return o.value === val; });
-        return opt ? opt.text : (val != null ? String(val) : '');
-      } catch (e) { return val || ''; }
-    }
-
     const taskTypeDisplay = (p.taskType && p.taskType.length) ? p.taskType.map(function(t){ return String(t).charAt(0).toUpperCase() + String(t).slice(1); }).join(', ') : '';
     const connectTypeDisplay = (p.connectType && p.connectType.length) ? p.connectType.map(function(c){
       // Use the display text from the form select if available to preserve casing
-      const txt = getOptionText('airdropConnectType', c);
+      const txt = getOptionTextBySelect('airdropConnectType', c);
       return txt || String(c).toUpperCase();
     }).join(', ') : '';
     
     // Get status label from select options (respects custom edits)
-    const statusLabel = getOptionText('airdropStatus', p.status) || statusCfg.label;
+    const statusLabel = getOptionTextBySelect('airdropStatus', p.status) || statusCfg.label;
     
     // Get reward type labels from select options (respects custom edits)
     const rewardTypeDisplay = (p.rewardType && p.rewardType.length) ? p.rewardType.map(function(r){
-      const txt = getOptionText('airdropRewardType', r);
+      const txt = getOptionTextBySelect('airdropRewardType', r);
       return txt || r;
     }).join(', ') : '';
 
@@ -493,31 +514,15 @@ export function initApp() {
     const safeTaskTypeDisplay = escapeHtml(taskTypeDisplay || '--');
     const safeConnectTypeDisplay = escapeHtml(connectTypeDisplay || '--');
     const safeRewardTypeDisplay = escapeHtml(rewardTypeDisplay || '--');
-    const safeRaise = escapeHtml(p.raise || '');
     const safeLink = sanitizeUrl(p.link);
     
-    const taskCellContent = p.noActiveTasks
-      ? `<span class="no-tasks">No active tasks</span>`
-      : `
+    const taskCellContent = `
         <span class="task-meta">
           <span class="cost">Cost: $${p.taskCost}</span>
           <span class="time">Time: ${p.taskTime} min</span>
         </span>
         <span class="task-desc">${safeConnectTypeDisplay}</span>
       `;
-    const raiseCell = p.raise
-      ? `
-        <span class="raise-amount">$ ${safeRaise}</span>
-        ${p.logos && p.logos.length ? `<div class="raise-avatars">${p.logos.map((_, i) => `<span class="placeholder-logo" style="width:24px;height:24px;font-size:0.7rem;margin-left:${i === 0 ? 0 : -8}px">${String.fromCharCode(65 + i)}</span>`).join('')}</div>` : ''}
-        <span class="raise-count">+${p.raiseCount}</span>
-      `
-      : p.raiseCount > 0
-        ? `
-          <div class="raise-avatars">${(p.logos || []).map((_, i) => `<span class="placeholder-logo" style="width:24px;height:24px;font-size:0.7rem;margin-left:${i === 0 ? 0 : -8}px">${String.fromCharCode(65 + i)}</span>`).join('')}</div>
-          <span class="raise-count">+${p.raiseCount}</span>
-        `
-        : '--';
-
     return `
       <tr data-id="${p.id}">
         <td class="col-name">
@@ -548,7 +553,6 @@ export function initApp() {
           </div>
         </td>
         <td class="col-reward"><span class="reward-type">${safeRewardTypeDisplay}</span></td>
-        <td class="col-raise"><div class="raise-cell">${raiseCell}</div></td>
         <td class="col-actions">
           <div class="cell-actions">
             <button type="button" class="btn-action edit" aria-label="Edit" data-id="${p.id}" data-action="edit"><i class="fas fa-pen"></i></button>
@@ -573,7 +577,6 @@ export function initApp() {
         if (!p.taskType || !Array.isArray(p.taskType) || !p.taskType.includes(taskType)) return false;
       }
       if (connectType) {
-        if (p.noActiveTasks) return false;
         if (!p.connectType || !Array.isArray(p.connectType) || !p.connectType.includes(connectType)) return false;
       }
       if (status && p.status !== status) return false;
@@ -590,6 +593,7 @@ export function initApp() {
     } else {
       sortProjects();
     }
+    renderTaskCounters();
     renderTable();
   }
 
@@ -601,11 +605,6 @@ export function initApp() {
         va = (va || '').toLowerCase();
         vb = (vb || '').toLowerCase();
         return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
-      }
-      if (sortKey === 'raise') {
-        va = parseFloat(String(a.raise || '0').replace(/[^0-9.]/g, '')) || 0;
-        vb = parseFloat(String(b.raise || '0').replace(/[^0-9.]/g, '')) || 0;
-        return sortDir === 'asc' ? (va - vb) : (vb - va);
       }
       if (sortKey === 'status' || sortKey === 'reward') {
         va = (va || '').toLowerCase();
@@ -647,7 +646,7 @@ export function initApp() {
   }
 
   function syncFilterOptionsWithForm() {
-    // Sync Task Type options from airdropTaskType to taskFilter
+    // Sync Task options from airdropTaskType to taskFilter
     const $airdropTaskType = byId('airdropTaskType');
     if ($airdropTaskType && $taskFilter) {
       const formOptions = Array.from($airdropTaskType.options).map(function(opt) {
@@ -676,7 +675,7 @@ export function initApp() {
       sortSelectElement('taskFilter');
     }
 
-    // Sync Connect Type options from airdropConnectType to taskTypeFilter
+    // Sync Connect options from airdropConnectType to taskTypeFilter
     const $airdropConnectType = byId('airdropConnectType');
     if ($airdropConnectType && $taskTypeFilter) {
       const formOptions = Array.from($airdropConnectType.options).map(function(opt) {
@@ -726,13 +725,13 @@ export function initApp() {
       sortSelectElement('statusFilter');
     }
 
-    // Sync Reward Type options from airdropRewardType (collect from actual data)
+    // Sync Reward options from airdropRewardType (collect from actual data)
     const $airdropRewardType = byId('airdropRewardType');
     if ($airdropRewardType) {
       const rewardTypeOptions = Array.from($airdropRewardType.options).map(function(opt) {
         return { value: opt.value, text: opt.text };
       });
-      // Note: Reward Type is used in data but not exposed as a filter dropdown in header currently
+      // Note: Reward is used in data but not exposed as a filter dropdown in header currently
       // This function sets up the infrastructure for it if added later
     }
   }
@@ -950,16 +949,12 @@ export function initApp() {
     const codeEl = byId('airdropCode');
     const linkEl = byId('airdropLink');
     const taskTypeEl = byId('airdropTaskType');
-    const noTasksEl = byId('airdropNoTasks');
-    const isNewEl = byId('airdropIsNew');
     const connectTypeEl = byId('airdropConnectType');
     const taskCostEl = byId('airdropTaskCost');
     const taskTimeEl = byId('airdropTaskTime');
     const statusEl = byId('airdropStatus');
     const statusDateEl = byId('airdropStatusDate');
     const rewardTypeEl = byId('airdropRewardType');
-    const raiseEl = byId('airdropRaise');
-    const raiseCountEl = byId('airdropRaiseCount');
     const idVal = idEl && idEl.value ? parseInt(idEl.value, 10) : null;
     return {
       id: idVal,
@@ -967,16 +962,12 @@ export function initApp() {
       code: codeEl ? codeEl.value.toUpperCase() : '',
       link: linkEl ? linkEl.value : '',
       taskType: taskTypeEl ? (taskTypeEl.multiple ? Array.from(taskTypeEl.selectedOptions).map(function(o){ return o.value; }) : taskTypeEl.value) : [],
-      noActiveTasks: noTasksEl ? noTasksEl.checked : false,
-      isNew: isNewEl ? isNewEl.checked : false,
       connectType: connectTypeEl ? (connectTypeEl.multiple ? Array.from(connectTypeEl.selectedOptions).map(function(o){ return o.value; }) : connectTypeEl.value) : [],
       taskCost: taskCostEl ? taskCostEl.value : '0',
       taskTime: taskTimeEl ? taskTimeEl.value : '3',
       status: statusEl ? statusEl.value : 'potential',
       statusDate: statusDateEl ? statusDateEl.value : '',
       rewardType: rewardTypeEl ? (rewardTypeEl.multiple ? Array.from(rewardTypeEl.selectedOptions).map(function(o){ return o.value; }) : rewardTypeEl.value) : [],
-      raise: raiseEl ? raiseEl.value : '',
-      raiseCount: raiseCountEl ? (raiseCountEl.value !== '' ? Number(raiseCountEl.value) : 0) : 0,
     };
   }
 
@@ -996,16 +987,12 @@ export function initApp() {
     set('airdropCode', data.code);
     set('airdropLink', data.link);
     set('airdropTaskType', data.taskType);
-    set('airdropNoTasks', data.noActiveTasks);
-    set('airdropIsNew', data.isNew);
     set('airdropConnectType', data.connectType);
     set('airdropTaskCost', data.taskCost);
     set('airdropTaskTime', data.taskTime);
     set('airdropStatus', data.status);
     set('airdropStatusDate', data.statusDate);
     set('airdropRewardType', data.rewardType && Array.isArray(data.rewardType) ? data.rewardType : (data.rewardType ? [data.rewardType] : []));
-    set('airdropRaise', data.raise);
-    set('airdropRaiseCount', data.raiseCount);
   }
 
   function resetAirdropForm() {
@@ -1015,16 +1002,12 @@ export function initApp() {
       code: '',
       link: '',
       taskType: '',
-      noActiveTasks: false,
-      isNew: false,
       connectType: '',
       taskCost: '',
       taskTime: '',
       status: 'potential',
       statusDate: '',
       rewardType: [],
-      raise: '',
-      raiseCount: 0,
     });
   }
 
@@ -1337,7 +1320,7 @@ export function initApp() {
   function initCloudSync() {
     const firebase = initFirebase();
     if (!firebase || !firebase.enabled) {
-      setAuthStatus('Cloud sync disabled...', 'muted');
+      setAuthStatus('Cloud sync disabled', 'muted');
       setAuthUi(null);
       return;
     }
@@ -1345,14 +1328,14 @@ export function initApp() {
     CLOUD_AUTH = firebase.auth;
     CLOUD_DB = firebase.db;
     setAuthUi(null);
-    setAuthStatus('Cloud ready...', 'muted');
+    setAuthStatus('Cloud ready', 'muted');
     onAuthStateChanged(CLOUD_AUTH, function (user) {
       CLOUD_USER = user;
       setAuthUi(user);
       if (!user) {
         LAST_SIGNED_OUT_AT = Date.now();
         detachCloudListener();
-        setAuthStatus('Store locally, sign in to sync...', 'muted');
+        setAuthStatus('Store locally, sign in to sync', 'muted');
         return;
       }
       syncFromCloud(user);
@@ -1490,7 +1473,7 @@ export function initApp() {
       })
       .catch(function () {
         setAuthStatus('Google sign-in failed', 'error');
-        showNotification('Sign-in Error', 'Google sign-in was canceled or failed.');
+        showNotification('Sign-in Error', 'Please try again');
       });
   });
   on($signOutBtn, 'click', function () {
@@ -1498,7 +1481,7 @@ export function initApp() {
     LAST_SIGNED_OUT_AT = Date.now();
     signOut(CLOUD_AUTH).catch(function () {
       setAuthStatus('Sign-out failed', 'error');
-      showNotification('Sign-out Error', 'Could not sign out. Please try again.');
+      showNotification('Sign-out Error', 'Please try again.');
     });
   });
 
@@ -1506,6 +1489,28 @@ export function initApp() {
   on($notificationClose, 'click', closeNotificationModal);
   on($notificationOk, 'click', closeNotificationModal);
   bindOverlayClose($notificationModal, closeNotificationModal);
+  on($taskCountTrigger, 'click', function () {
+    if (!$taskCountDropdown) return;
+    const isOpen = $taskCountDropdown.classList.toggle('open');
+    if ($taskCountTrigger) $taskCountTrigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+  function closeTaskCountDropdown() {
+    if (!$taskCountDropdown || !$taskCountTrigger) return;
+    $taskCountDropdown.classList.remove('open');
+    $taskCountTrigger.setAttribute('aria-expanded', 'false');
+  }
+  document.addEventListener('click', function (e) {
+    if (!$taskCountDropdown || !$taskCountTrigger) return;
+    if ($taskCountDropdown.contains(e.target)) return;
+    closeTaskCountDropdown();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    closeTaskCountDropdown();
+  });
+  window.addEventListener('scroll', function () {
+    closeTaskCountDropdown();
+  });
   on($backToTopBtn, 'click', function () {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
