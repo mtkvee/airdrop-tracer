@@ -9,13 +9,21 @@ Airdrop Tracer helps crypto users track, verify, and organize airdrops across wa
 - **Stay lightweight**: Fast load, responsive on mobile, no unnecessary steps.
 
 ## Core User Flow
-
 1. **See airdrop status at a glance**
-   A clear status system.
+   A clear status system with visible last-updated time.
+2. **Add or edit an airdrop**
+   Keep task, connect type, status, reward, and raise details in one place.
+3. **Filter and search**
+   Find new or high-priority items quickly.
+4. **Sync and back up**
+   Use Google sign-in to keep data in the cloud and import/export JSON when needed.
 
-## Feature Overview (Function Explanations)
-- **History log**: Keep a clear record of past airdrops and actions taken.
-- **Fast search and filters**: Narrow to new, expiring, or action-required items quickly.
+## Feature Overview
+- **Google auth + cloud sync**: Sign in to sync with Firestore when Firebase config is present.
+- **Local-first storage**: Work offline; data persists in local storage.
+- **Import/Export**: JSON backup/restore from the header buttons.
+- **Custom options**: Manage select options for task type, connect type, status, and reward type.
+- **Fast search and filters**: Narrow to new or specific categories quickly.
 
 ## Tech Stack
 - **Next.js** for the web app framework
@@ -28,11 +36,6 @@ Airdrop Tracer helps crypto users track, verify, and organize airdrops across wa
 npm install
 npm run dev
 ```
-
-## Scripts
-- `npm run dev` � start the dev server
-- `npm run build` � build for production
-- `npm run start` � run the production server
 
 ## Notes
 This project is optimized for clear UX and fast decision-making. If you add new features, keep the status system and primary actions simple and consistent.

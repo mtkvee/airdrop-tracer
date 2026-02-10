@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { initApp } from './legacy/initApp';
+import { useEffect } from "react";
+import { initApp } from "./legacy/initApp";
 
 export default function HomePage() {
   useEffect(() => {
@@ -10,9 +10,18 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="auth-status-banner is-hidden" id="authStatusBar" role="status" aria-live="polite">
+      <div
+        className="auth-status-banner is-hidden"
+        id="authStatusBar"
+        role="status"
+        aria-live="polite"
+      >
         <div className="auth-status">
-          <span className="auth-status-icon" id="authStatusIcon" aria-hidden="true"></span>
+          <span
+            className="auth-status-icon"
+            id="authStatusIcon"
+            aria-hidden="true"
+          ></span>
           <span className="auth-status-text" id="authStatusText"></span>
         </div>
       </div>
@@ -20,25 +29,71 @@ export default function HomePage() {
         Airdrop Tracer <span className="app-version">(v0.1)</span>
       </h1>
       <div className="social-icons">
-        <a className="social-icon" href="https://x.com/vee_mtk" target="_blank" rel="noreferrer">
+        <a
+          className="social-icon"
+          href="https://x.com/vee_mtk"
+          target="_blank"
+          rel="noreferrer"
+        >
           <i className="fa-brands fa-x-twitter"></i>
         </a>
       </div>
       <div className="app">
         <header className="header">
           <div className="auth-bar">
-              <button type="button" className="btn-auth" id="signInBtn" aria-label="Sign in with Google">
-                <i className="fa-brands fa-google"></i> Sign in
+            <button
+              type="button"
+              className="btn-auth"
+              id="signInBtn"
+              aria-label="Sign in with Google"
+            >
+              <i className="fa-brands fa-google"></i> Sign in
+            </button>
+            <div className="auth-user is-hidden" id="authUser"></div>
+            <button
+              type="button"
+              className="btn-auth btn-auth-ghost is-hidden"
+              id="signOutBtn"
+              aria-label="Sign out"
+            >
+              <i className="fa-brands fa-google"></i> Sign out
+            </button>
+            <div className="data-import-export">
+              <button
+                type="button"
+                className="btn-import-export"
+                id="exportBtn"
+                aria-label="Export airdrops"
+                title="Export"
+              >
+                <i className="fas fa-download"></i>
               </button>
-              <div className="auth-user is-hidden" id="authUser"></div>
-              <button type="button" className="btn-auth btn-auth-ghost is-hidden" id="signOutBtn" aria-label="Sign out">
-                Sign out
+              <button
+                type="button"
+                className="btn-import-export"
+                id="importBtn"
+                aria-label="Import airdrops"
+                title="Import"
+              >
+                <i className="fas fa-upload"></i>
               </button>
+              <input
+                type="file"
+                id="importFileInput"
+                accept=".json,application/json"
+                hidden
+              />
             </div>
+          </div>
           <div className="header-actions">
             <div className="header-main-actions-btns">
-              <button type="button" className="btn-add-airdrop" id="addAirdropBtn" aria-label="Add airdrop">
-                <i className="fas fa-plus"></i> Add
+              <button
+                type="button"
+                className="btn-add-airdrop"
+                id="addAirdropBtn"
+                aria-label="Add airdrop"
+              >
+                <i className="fas fa-plus"></i>New
               </button>
               <button
                 type="button"
@@ -56,39 +111,8 @@ export default function HomePage() {
                 aria-label="Delete all airdrops"
                 title="Delete all airdrops"
               >
-                <i className="fas fa-trash"></i>
+                <i className="fas fa-trash"></i>All
               </button>
-            </div>
-            <div className="header-data-actions-btns">
-              <div className='data-import-export'>
-                <button
-                  type="button"
-                  className="btn-import-export"
-                  id="exportBtn"
-                  aria-label="Export airdrops"
-                  title="Export"
-                >
-                  <i className="fas fa-download"></i>
-                </button>
-                <button
-                  type="button"
-                  className="btn-import-export"
-                  id="importBtn"
-                  aria-label="Import airdrops"
-                  title="Import"
-                >
-                  <i className="fas fa-upload"></i>
-                </button>
-                <input type="file" id="importFileInput" accept=".json,application/json" hidden />
-              </div>
-              <div className="tabs">
-                <button type="button" className="tab tab-active" data-tab="all">
-                  All
-                </button>
-                <button type="button" className="tab" data-tab="newTasks">
-                  New Tasks
-                </button>
-              </div>
             </div>
           </div>
           <div className="header-filters">
@@ -119,6 +143,14 @@ export default function HomePage() {
                 title="Remove filters"
               >
                 <i className="fa-solid fa-filter-circle-xmark"></i>
+              </button>
+            </div>
+            <div className="tabs">
+              <button type="button" className="tab tab-active" data-tab="all">
+                All
+              </button>
+              <button type="button" className="tab" data-tab="newTasks">
+                New
               </button>
             </div>
           </div>
@@ -163,12 +195,21 @@ export default function HomePage() {
       </div>
 
       <div className="modal-overlay" id="airdropFormModal" aria-hidden="true">
-        <div className="modal modal-form" role="dialog" aria-labelledby="airdropFormTitle">
+        <div
+          className="modal modal-form"
+          role="dialog"
+          aria-labelledby="airdropFormTitle"
+        >
           <div className="modal-header">
             <h2 id="airdropFormTitle" className="modal-title">
               Add Airdrop
             </h2>
-            <button type="button" className="modal-close" id="airdropFormClose" aria-label="Close">
+            <button
+              type="button"
+              className="modal-close"
+              id="airdropFormClose"
+              aria-label="Close"
+            >
               <i className="fas fa-times"></i>
             </button>
           </div>
@@ -188,10 +229,19 @@ export default function HomePage() {
                 </div>
                 <div className="form-group">
                   <label htmlFor="airdropCode">Code</label>
-                  <input type="text" id="airdropCode" name="code" placeholder="e.g. INX" />
+                  <input
+                    type="text"
+                    id="airdropCode"
+                    name="code"
+                    placeholder="e.g. INX"
+                  />
                 </div>
               </div>
-              <div id="airdropFormError" className="form-error is-hidden" aria-live="assertive"></div>
+              <div
+                id="airdropFormError"
+                className="form-error is-hidden"
+                aria-live="assertive"
+              ></div>
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="airdropLink">Link</label>
@@ -206,7 +256,12 @@ export default function HomePage() {
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="airdropTaskType">Task Type</label>
-                  <select id="airdropTaskType" name="taskType" multiple size={4}>
+                  <select
+                    id="airdropTaskType"
+                    name="taskType"
+                    multiple
+                    size={4}
+                  >
                     <option value="daily">Daily</option>
                     <option value="time-based">Time based</option>
                     <option value="quest">Quest</option>
@@ -218,12 +273,18 @@ export default function HomePage() {
               <div className="form-row">
                 <div className="form-group checkbox-group">
                   <label>
-                    <input type="checkbox" id="airdropNoTasks" name="noActiveTasks" /> No active tasks
+                    <input
+                      type="checkbox"
+                      id="airdropNoTasks"
+                      name="noActiveTasks"
+                    />{" "}
+                    No active tasks
                   </label>
                 </div>
                 <div className="form-group checkbox-group">
                   <label>
-                    <input type="checkbox" id="airdropIsNew" name="isNew" /> New badge
+                    <input type="checkbox" id="airdropIsNew" name="isNew" /> New
+                    badge
                   </label>
                 </div>
               </div>
@@ -231,7 +292,12 @@ export default function HomePage() {
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="airdropConnectType">Connect Type</label>
-                  <select id="airdropConnectType" name="connectType" multiple size={4}>
+                  <select
+                    id="airdropConnectType"
+                    name="connectType"
+                    multiple
+                    size={4}
+                  >
                     <option value="evm">EVM</option>
                     <option value="gmail">Gmail</option>
                     <option value="google">Google</option>
@@ -255,7 +321,13 @@ export default function HomePage() {
                 </div>
                 <div className="form-group">
                   <label htmlFor="airdropTaskTime">Time (min)</label>
-                  <input type="number" id="airdropTaskTime" name="taskTime" min="0" placeholder="0" />
+                  <input
+                    type="number"
+                    id="airdropTaskTime"
+                    name="taskTime"
+                    min="0"
+                    placeholder="0"
+                  />
                 </div>
               </div>
 
@@ -271,13 +343,23 @@ export default function HomePage() {
                 </div>
                 <div className="form-group">
                   <label htmlFor="airdropStatusDate">Status date</label>
-                  <input type="text" id="airdropStatusDate" name="statusDate" placeholder="31 Jan 2026" />
+                  <input
+                    type="text"
+                    id="airdropStatusDate"
+                    name="statusDate"
+                    placeholder="31 Jan 2026"
+                  />
                 </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="airdropRewardType">Reward Type</label>
-                  <select id="airdropRewardType" name="rewardType" multiple size={4}>
+                  <select
+                    id="airdropRewardType"
+                    name="rewardType"
+                    multiple
+                    size={4}
+                  >
                     <option value="">--</option>
                     <option value="Airdrop">Airdrop</option>
                     <option value="Ambassador">Ambassador</option>
@@ -292,7 +374,12 @@ export default function HomePage() {
               <div className="form-row two-cols">
                 <div className="form-group">
                   <label htmlFor="airdropRaise">Raise amount</label>
-                  <input type="text" id="airdropRaise" name="raise" placeholder="e.g. 72.49M" />
+                  <input
+                    type="text"
+                    id="airdropRaise"
+                    name="raise"
+                    placeholder="e.g. 72.49M"
+                  />
                 </div>
                 <div className="form-group">
                   <label htmlFor="airdropRaiseCount">Raise count</label>
@@ -308,7 +395,11 @@ export default function HomePage() {
             </form>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn-secondary" id="airdropFormCancel">
+            <button
+              type="button"
+              className="btn-secondary"
+              id="airdropFormCancel"
+            >
               Cancel
             </button>
             <button type="submit" form="airdropForm" className="btn-apply">
@@ -319,7 +410,11 @@ export default function HomePage() {
       </div>
 
       <div className="modal-overlay" id="filtersModal" aria-hidden="true">
-        <div className="modal modal-form" role="dialog" aria-labelledby="filtersTitle">
+        <div
+          className="modal modal-form"
+          role="dialog"
+          aria-labelledby="filtersTitle"
+        >
           <div className="modal-header">
             <h2 id="filtersTitle" className="modal-title">
               Filters
@@ -383,12 +478,21 @@ export default function HomePage() {
       </div>
 
       <div className="modal-overlay" id="manageOptionsModal" aria-hidden="true">
-        <div className="modal modal-form" role="dialog" aria-labelledby="manageOptionsTitle">
+        <div
+          className="modal modal-form"
+          role="dialog"
+          aria-labelledby="manageOptionsTitle"
+        >
           <div className="modal-header">
             <h2 id="manageOptionsTitle" className="modal-title">
               Manage Options
             </h2>
-            <button type="button" className="modal-close" id="manageOptionsClose" aria-label="Close">
+            <button
+              type="button"
+              className="modal-close"
+              id="manageOptionsClose"
+              aria-label="Close"
+            >
               <i className="fas fa-times"></i>
             </button>
           </div>
@@ -416,21 +520,37 @@ export default function HomePage() {
               <div className="form-row two-cols">
                 <div className="form-group">
                   <label htmlFor="newOptionValue">Value</label>
-                  <input type="text" id="newOptionValue" name="newOptionValue" placeholder="e.g. quest" />
+                  <input
+                    type="text"
+                    id="newOptionValue"
+                    name="newOptionValue"
+                    placeholder="e.g. quest"
+                  />
                 </div>
                 <div className="form-group">
                   <label htmlFor="newOptionText">Display Text</label>
-                  <input type="text" id="newOptionText" name="newOptionText" placeholder="e.g. Quest" />
+                  <input
+                    type="text"
+                    id="newOptionText"
+                    name="newOptionText"
+                    placeholder="e.g. Quest"
+                  />
                 </div>
               </div>
-              <p className="add-option-message">Fill Value &amp; Display Text first, then click "Add Option".</p>
+              <p className="add-option-message">
+                Fill Value &amp; Display Text first, then click "Add Option".
+              </p>
               <button type="button" className="btn-secondary" id="addOptionBtn">
                 <i className="fas fa-plus"></i> Add Option
               </button>
             </form>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn-secondary" id="manageOptionsCancel">
+            <button
+              type="button"
+              className="btn-secondary"
+              id="manageOptionsCancel"
+            >
               Cancel
             </button>
             <button type="button" className="btn-apply" id="manageOptionsSave">
@@ -441,12 +561,21 @@ export default function HomePage() {
       </div>
 
       <div className="modal-overlay" id="editOptionModal" aria-hidden="true">
-        <div className="modal modal-form" role="dialog" aria-labelledby="editOptionTitle">
+        <div
+          className="modal modal-form"
+          role="dialog"
+          aria-labelledby="editOptionTitle"
+        >
           <div className="modal-header">
             <h2 id="editOptionTitle" className="modal-title">
               Edit Option
             </h2>
-            <button type="button" className="modal-close" id="editOptionClose" aria-label="Close">
+            <button
+              type="button"
+              className="modal-close"
+              id="editOptionClose"
+              aria-label="Close"
+            >
               <i className="fas fa-times"></i>
             </button>
           </div>
@@ -455,19 +584,33 @@ export default function HomePage() {
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="editOptionValue">Value</label>
-                  <input type="text" id="editOptionValue" name="editOptionValue" placeholder="e.g. quest" />
+                  <input
+                    type="text"
+                    id="editOptionValue"
+                    name="editOptionValue"
+                    placeholder="e.g. quest"
+                  />
                 </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="editOptionText">Display Text</label>
-                  <input type="text" id="editOptionText" name="editOptionText" placeholder="e.g. Quest" />
+                  <input
+                    type="text"
+                    id="editOptionText"
+                    name="editOptionText"
+                    placeholder="e.g. Quest"
+                  />
                 </div>
               </div>
             </form>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn-secondary" id="editOptionCancel">
+            <button
+              type="button"
+              className="btn-secondary"
+              id="editOptionCancel"
+            >
               Cancel
             </button>
             <button type="button" className="btn-apply" id="editOptionSave">
@@ -477,26 +620,48 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="modal-overlay" id="deleteAllConfirmModal" aria-hidden="true">
-        <div className="modal" role="dialog" aria-labelledby="deleteAllConfirmTitle">
+      <div
+        className="modal-overlay"
+        id="deleteAllConfirmModal"
+        aria-hidden="true"
+      >
+        <div
+          className="modal"
+          role="dialog"
+          aria-labelledby="deleteAllConfirmTitle"
+        >
           <div className="modal-header">
             <h2 id="deleteAllConfirmTitle" className="modal-title">
               Delete All Airdrops
             </h2>
-            <button type="button" className="modal-close" id="deleteAllConfirmClose" aria-label="Close">
+            <button
+              type="button"
+              className="modal-close"
+              id="deleteAllConfirmClose"
+              aria-label="Close"
+            >
               <i className="fas fa-times"></i>
             </button>
           </div>
           <div className="modal-body">
             <p id="deleteAllConfirmMessage">
-              Are you sure you want to delete all airdrops? This action cannot be undone.
+              Are you sure you want to delete all airdrops? This action cannot
+              be undone.
             </p>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn-secondary" id="deleteAllConfirmCancel">
+            <button
+              type="button"
+              className="btn-secondary"
+              id="deleteAllConfirmCancel"
+            >
               Cancel
             </button>
-            <button type="button" className="btn-danger" id="deleteAllConfirmOk">
+            <button
+              type="button"
+              className="btn-danger"
+              id="deleteAllConfirmOk"
+            >
               <i className="fas fa-trash-alt"></i> Delete All
             </button>
           </div>
@@ -504,22 +669,36 @@ export default function HomePage() {
       </div>
 
       <div className="modal-overlay" id="deleteConfirmModal" aria-hidden="true">
-        <div className="modal modal-sm" role="dialog" aria-labelledby="deleteConfirmTitle">
+        <div
+          className="modal modal-sm"
+          role="dialog"
+          aria-labelledby="deleteConfirmTitle"
+        >
           <div className="modal-header">
             <h2 id="deleteConfirmTitle" className="modal-title">
               Delete airdrop?
             </h2>
-            <button type="button" className="modal-close" id="deleteConfirmClose" aria-label="Close">
+            <button
+              type="button"
+              className="modal-close"
+              id="deleteConfirmClose"
+              aria-label="Close"
+            >
               <i className="fas fa-times"></i>
             </button>
           </div>
           <div className="modal-body">
             <p id="deleteConfirmMessage">
-              This will remove the airdrop from the list. This action cannot be undone.
+              This will remove the airdrop from the list. This action cannot be
+              undone.
             </p>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn-secondary" id="deleteConfirmCancel">
+            <button
+              type="button"
+              className="btn-secondary"
+              id="deleteConfirmCancel"
+            >
               Cancel
             </button>
             <button type="button" className="btn-danger" id="deleteConfirmOk">
@@ -530,12 +709,21 @@ export default function HomePage() {
       </div>
 
       <div className="modal-overlay" id="notificationModal" aria-hidden="true">
-        <div className="modal modal-sm" role="dialog" aria-labelledby="notificationTitle">
+        <div
+          className="modal modal-sm"
+          role="dialog"
+          aria-labelledby="notificationTitle"
+        >
           <div className="modal-header">
             <h2 id="notificationTitle" className="modal-title">
               Notification
             </h2>
-            <button type="button" className="modal-close" id="notificationClose" aria-label="Close">
+            <button
+              type="button"
+              className="modal-close"
+              id="notificationClose"
+              aria-label="Close"
+            >
               <i className="fas fa-times"></i>
             </button>
           </div>
@@ -549,6 +737,16 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      <button
+        type="button"
+        className="back-to-top"
+        id="backToTopBtn"
+        aria-label="Back to top"
+        title="Back to top"
+      >
+        <i className="fas fa-arrow-up"></i>
+      </button>
     </>
   );
 }

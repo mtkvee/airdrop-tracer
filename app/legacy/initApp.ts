@@ -34,6 +34,13 @@ export function initApp() {
     document.body.style.overflow = open ? 'hidden' : '';
   }
 
+  function bindOverlayClose(modal, closeFn) {
+    if (!modal) return;
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) closeFn();
+    });
+  }
+
   function loadFromLocalStorage() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -155,6 +162,7 @@ export function initApp() {
   const $authStatusBar = byId('authStatusBar');
   const $authStatusText = byId('authStatusText');
   const $authStatusIcon = byId('authStatusIcon');
+  const $backToTopBtn = byId('backToTopBtn');
 
   function updateLastUpdatedTime() {
     LAST_UPDATED_AT = Date.now();
@@ -168,6 +176,12 @@ export function initApp() {
     if ($lastUpdatedTime) {
       $lastUpdatedTime.textContent = formatRelativeTime(LAST_UPDATED_AT);
     }
+  }
+
+  function updateBackToTopVisibility() {
+    if (!$backToTopBtn) return;
+    const shouldShow = window.scrollY > 400;
+    $backToTopBtn.classList.toggle('is-visible', shouldShow);
   }
 
   function setAuthStatus(message, tone) {
@@ -242,7 +256,7 @@ export function initApp() {
       const snap = await getDoc(ref);
       return snap.exists() ? snap.data() : null;
     } catch (err) {
-      setAuthStatus('Cloud read failed', 'error');
+      setAuthStatus('Cloud read failed...', 'error');
       return null;
     }
   }
@@ -253,7 +267,7 @@ export function initApp() {
     if (!ref) return;
     try {
       CLOUD_SYNCING = true;
-      setAuthStatus('Syncing...!', 'muted');
+      setAuthStatus('Cloud syncing...', 'muted');
       await setDoc(
         ref,
         {
@@ -264,34 +278,34 @@ export function initApp() {
         { merge: true }
       );
       CLOUD_SYNCING = false;
-      setAuthStatus('Synced!', 'success');
+      setAuthStatus('Cloud synced...', 'success');
     } catch (err) {
       CLOUD_SYNCING = false;
-      setAuthStatus('Sync failed!', 'error');
+      setAuthStatus('Cloud sync failed...', 'error');
     }
   }
 
   async function syncFromCloud(user) {
     if (!user) return;
-    setAuthStatus('Checking...!', 'muted');
+    setAuthStatus('Checking cloud...', 'muted');
     const cloudPayload = await readCloudState(user.uid);
     const cloudUpdated = cloudPayload && cloudPayload.lastUpdatedAt ? Number(cloudPayload.lastUpdatedAt) : 0;
     const localUpdated = Number(LAST_UPDATED_AT || 0);
     if (!cloudPayload) {
-      setAuthStatus('Cloud ready (local data)', 'muted');
+      setAuthStatus('Cloud ready (local data)...', 'muted');
       if (PROJECTS.length || Object.keys(CUSTOM_OPTIONS || {}).length) {
         queueCloudSave(buildPayload());
       }
       return;
     }
     if (cloudUpdated === 0 && localUpdated === 0) {
-      setAuthStatus('Synced!', 'success');
+      setAuthStatus('Cloud synced...', 'success');
       return;
     }
     var merged = mergePayloads(buildPayload(), cloudPayload);
     applyPayload(merged);
     queueCloudSave(merged);
-    setAuthStatus('Synced!', 'success');
+    setAuthStatus('Cloud synced...', 'success');
   }
 
   function attachCloudListener(user) {
@@ -311,7 +325,7 @@ export function initApp() {
       if (remoteUpdated > localUpdated) {
         IGNORE_REMOTE_APPLY = true;
         applyPayload(data);
-        setAuthStatus('Updated!', 'success');
+        setAuthStatus('Updated from cloud...', 'success');
         setTimeout(function () { IGNORE_REMOTE_APPLY = false; }, 300);
       }
     });
@@ -1323,7 +1337,7 @@ export function initApp() {
   function initCloudSync() {
     const firebase = initFirebase();
     if (!firebase || !firebase.enabled) {
-      setAuthStatus('Sync disabled!', 'muted');
+      setAuthStatus('Cloud sync disabled...', 'muted');
       setAuthUi(null);
       return;
     }
@@ -1331,14 +1345,14 @@ export function initApp() {
     CLOUD_AUTH = firebase.auth;
     CLOUD_DB = firebase.db;
     setAuthUi(null);
-    setAuthStatus('Sign in to sync!', 'muted');
+    setAuthStatus('Cloud ready...', 'muted');
     onAuthStateChanged(CLOUD_AUTH, function (user) {
       CLOUD_USER = user;
       setAuthUi(user);
       if (!user) {
         LAST_SIGNED_OUT_AT = Date.now();
         detachCloudListener();
-        setAuthStatus('Store locally, sign in to sync!', 'muted');
+        setAuthStatus('Store locally, sign in to sync...', 'muted');
         return;
       }
       syncFromCloud(user);
@@ -1373,9 +1387,7 @@ export function initApp() {
   on($filtersClose, 'click', closeFiltersModal);
   on($filtersDone, 'click', closeFiltersModal);
   on($filtersClear, 'click', removeFilters);
-  $filtersModal && $filtersModal.addEventListener('click', function (e) {
-    if (e.target === $filtersModal) closeFiltersModal();
-  });
+  bindOverlayClose($filtersModal, closeFiltersModal);
 
   on($addAirdropBtn, 'click', function () {
     resetAirdropForm();
@@ -1386,15 +1398,11 @@ export function initApp() {
   on($airdropForm, 'submit', handleAirdropFormSubmit);
   on($airdropFormClose, 'click', closeAirdropFormModal);
   on($airdropFormCancel, 'click', closeAirdropFormModal);
-  $airdropFormModal && $airdropFormModal.addEventListener('click', function (e) {
-    if (e.target === $airdropFormModal) closeAirdropFormModal();
-  });
+  bindOverlayClose($airdropFormModal, closeAirdropFormModal);
   on($deleteConfirmClose, 'click', closeDeleteConfirmModal);
   on($deleteConfirmCancel, 'click', closeDeleteConfirmModal);
   on($deleteConfirmOk, 'click', handleDeleteConfirm);
-  $deleteConfirmModal && $deleteConfirmModal.addEventListener('click', function (e) {
-    if (e.target === $deleteConfirmModal) closeDeleteConfirmModal();
-  });
+  bindOverlayClose($deleteConfirmModal, closeDeleteConfirmModal);
 
   document.querySelectorAll('.tab').forEach(function (tab) {
     tab.addEventListener('click', function () {
@@ -1452,9 +1460,7 @@ export function initApp() {
     e.preventDefault();
     handleEditOptionSave();
   });
-  if ($editOptionModal) $editOptionModal.addEventListener('click', function(e) {
-    if (e.target === $editOptionModal) closeEditOptionModal();
-  });
+  bindOverlayClose($editOptionModal, closeEditOptionModal);
   // Allow Enter key to save in edit modal
   on($editOptionValue, 'keypress', function(e) {
     if (e.key === 'Enter') handleEditOptionSave();
@@ -1465,12 +1471,8 @@ export function initApp() {
   on($deleteAllConfirmOk, 'click', handleDeleteAllConfirm);
   on($deleteAllConfirmCancel, 'click', closeDeleteAllConfirmModal);
   on($deleteAllConfirmClose, 'click', closeDeleteAllConfirmModal);
-  if ($manageOptionsModal) $manageOptionsModal.addEventListener('click', function(e) {
-    if (e.target === $manageOptionsModal) closeManageOptionsModal();
-  });
-  if ($deleteAllConfirmModal) $deleteAllConfirmModal.addEventListener('click', function(e) {
-    if (e.target === $deleteAllConfirmModal) closeDeleteAllConfirmModal();
-  });
+  bindOverlayClose($manageOptionsModal, closeManageOptionsModal);
+  bindOverlayClose($deleteAllConfirmModal, closeDeleteAllConfirmModal);
   on($exportBtn, 'click', exportData);
   on($importBtn, 'click', function () { if ($importFileInput) $importFileInput.click(); });
   on($importFileInput, 'change', handleImportFile);
@@ -1503,9 +1505,12 @@ export function initApp() {
 
   on($notificationClose, 'click', closeNotificationModal);
   on($notificationOk, 'click', closeNotificationModal);
-  if ($notificationModal) $notificationModal.addEventListener('click', function(e) {
-    if (e.target === $notificationModal) closeNotificationModal();
+  bindOverlayClose($notificationModal, closeNotificationModal);
+  on($backToTopBtn, 'click', function () {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+  window.addEventListener('scroll', updateBackToTopVisibility);
+  updateBackToTopVisibility();
 
   initSort();
   initCustomOptions();
