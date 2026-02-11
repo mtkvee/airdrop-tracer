@@ -177,6 +177,12 @@ export function initApp() {
   const $taskCountDropdown = byId('taskCountDropdown');
   const $taskCountTrigger = byId('taskCountTrigger');
   const $taskCountMenu = byId('taskCountMenu');
+  const $connectCountDropdown = byId('connectCountDropdown');
+  const $connectCountTrigger = byId('connectCountTrigger');
+  const $connectCountMenu = byId('connectCountMenu');
+  const $statusCountDropdown = byId('statusCountDropdown');
+  const $statusCountTrigger = byId('statusCountTrigger');
+  const $statusCountMenu = byId('statusCountMenu');
 
   function updateLastUpdatedTime() {
     LAST_UPDATED_AT = Date.now();
@@ -198,29 +204,65 @@ export function initApp() {
     $backToTopBtn.classList.toggle('is-visible', shouldShow);
   }
 
-  function renderTaskCounters() {
-    if (!$taskCountMenu) return;
-    const counts = {};
-    PROJECTS.forEach(function (p) {
-      ensureArray(p.taskType).forEach(function (t) {
-        if (!t) return;
-        counts[t] = (counts[t] || 0) + 1;
-      });
-    });
-    const keys = Object.keys(counts);
+  function buildCounterItems(menuEl, optionSelectId, filterType, counts, allCount) {
+    if (!menuEl) return;
+    const keys = Object.keys(counts || {});
     if (!keys.length) {
-      $taskCountMenu.innerHTML = '<div class="task-count-item">No tasks</div>';
+      menuEl.innerHTML = '<div class="task-count-item">No data</div>';
       return;
     }
     keys.sort(function (a, b) {
       return String(a).localeCompare(String(b), 'en', { sensitivity: 'base' });
     });
-    $taskCountMenu.innerHTML = keys
-      .map(function (k) {
-        const label = getOptionTextBySelect('airdropTaskType', k) || k;
-        return '<div class="task-count-item"><span>' + escapeHtml(label) + '</span><span class="task-count-badge">' + counts[k] + '</span></div>';
-      })
-      .join('');
+    const items = [
+      '<button type="button" class="task-count-item task-count-filter-item" data-filter-type="' + filterType + '" data-filter-value=""><span class="task-count-label">All</span><span class="task-count-badge">' + allCount + '</span></button>'
+    ];
+    keys.forEach(function (k) {
+      const label = getOptionTextBySelect(optionSelectId, k) || k;
+      items.push('<button type="button" class="task-count-item task-count-filter-item" data-filter-type="' + filterType + '" data-filter-value="' + escapeHtml(k) + '"><span class="task-count-label">' + escapeHtml(label) + '</span><span class="task-count-badge">' + counts[k] + '</span></button>');
+    });
+    menuEl.innerHTML = items.join('');
+  }
+
+  function renderTaskCounters() {
+    const taskCounts = {};
+    const connectCounts = {};
+    const statusCounts = {};
+    PROJECTS.forEach(function (p) {
+      ensureArray(p.taskType).forEach(function (t) {
+        if (!t) return;
+        taskCounts[t] = (taskCounts[t] || 0) + 1;
+      });
+      ensureArray(p.connectType).forEach(function (c) {
+        if (!c) return;
+        connectCounts[c] = (connectCounts[c] || 0) + 1;
+      });
+      if (p.status) {
+        statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
+      }
+    });
+    const total = PROJECTS.length;
+    buildCounterItems($taskCountMenu, 'airdropTaskType', 'task', taskCounts, total);
+    buildCounterItems($connectCountMenu, 'airdropConnectType', 'connect', connectCounts, total);
+    buildCounterItems($statusCountMenu, 'airdropStatus', 'status', statusCounts, total);
+  }
+
+  function applyCounterFilter(e) {
+    const trigger = e.target && e.target.closest ? e.target.closest('.task-count-filter-item') : null;
+    if (!trigger) return;
+    const value = trigger.getAttribute('data-filter-value') || '';
+    const type = trigger.getAttribute('data-filter-type') || '';
+    if (type === 'task' && $taskFilter) {
+      $taskFilter.value = value;
+      $taskFilter.dispatchEvent(new Event('change'));
+    } else if (type === 'connect' && $taskTypeFilter) {
+      $taskTypeFilter.value = value;
+      $taskTypeFilter.dispatchEvent(new Event('change'));
+    } else if (type === 'status' && $statusFilter) {
+      $statusFilter.value = value;
+      $statusFilter.dispatchEvent(new Event('change'));
+    }
+    closeAllCounterDropdowns();
   }
 
   function setAuthStatus(message, tone) {
@@ -1489,27 +1531,48 @@ export function initApp() {
   on($notificationClose, 'click', closeNotificationModal);
   on($notificationOk, 'click', closeNotificationModal);
   bindOverlayClose($notificationModal, closeNotificationModal);
-  on($taskCountTrigger, 'click', function () {
-    if (!$taskCountDropdown) return;
-    const isOpen = $taskCountDropdown.classList.toggle('open');
-    if ($taskCountTrigger) $taskCountTrigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-  });
-  function closeTaskCountDropdown() {
-    if (!$taskCountDropdown || !$taskCountTrigger) return;
-    $taskCountDropdown.classList.remove('open');
-    $taskCountTrigger.setAttribute('aria-expanded', 'false');
+  function toggleCounterDropdown(dropdownEl, triggerEl) {
+    if (!dropdownEl || !triggerEl) return;
+    const willOpen = !dropdownEl.classList.contains('open');
+    closeAllCounterDropdowns();
+    dropdownEl.classList.toggle('open', willOpen);
+    triggerEl.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
   }
+  function closeAllCounterDropdowns() {
+    [
+      { dropdown: $taskCountDropdown, trigger: $taskCountTrigger },
+      { dropdown: $connectCountDropdown, trigger: $connectCountTrigger },
+      { dropdown: $statusCountDropdown, trigger: $statusCountTrigger },
+    ].forEach(function (item) {
+      if (!item.dropdown || !item.trigger) return;
+      item.dropdown.classList.remove('open');
+      item.trigger.setAttribute('aria-expanded', 'false');
+    });
+  }
+  on($taskCountTrigger, 'click', function () {
+    toggleCounterDropdown($taskCountDropdown, $taskCountTrigger);
+  });
+  on($connectCountTrigger, 'click', function () {
+    toggleCounterDropdown($connectCountDropdown, $connectCountTrigger);
+  });
+  on($statusCountTrigger, 'click', function () {
+    toggleCounterDropdown($statusCountDropdown, $statusCountTrigger);
+  });
+  on($taskCountMenu, 'click', applyCounterFilter);
+  on($connectCountMenu, 'click', applyCounterFilter);
+  on($statusCountMenu, 'click', applyCounterFilter);
   document.addEventListener('click', function (e) {
-    if (!$taskCountDropdown || !$taskCountTrigger) return;
-    if ($taskCountDropdown.contains(e.target)) return;
-    closeTaskCountDropdown();
+    if ($taskCountDropdown && $taskCountDropdown.contains(e.target)) return;
+    if ($connectCountDropdown && $connectCountDropdown.contains(e.target)) return;
+    if ($statusCountDropdown && $statusCountDropdown.contains(e.target)) return;
+    closeAllCounterDropdowns();
   });
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
-    closeTaskCountDropdown();
+    closeAllCounterDropdowns();
   });
   window.addEventListener('scroll', function () {
-    closeTaskCountDropdown();
+    closeAllCounterDropdowns();
   });
   on($backToTopBtn, 'click', function () {
     window.scrollTo({ top: 0, behavior: 'smooth' });

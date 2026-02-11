@@ -129,15 +129,6 @@ export default function HomePage() {
             <div className="filter-bar">
               <button
                 type="button"
-                className="btn-filters"
-                id="openFiltersBtn"
-                aria-label="Open filters"
-                title="Filters"
-              >
-                <i className="fas fa-sliders-h"></i>
-              </button>
-              <button
-                type="button"
                 className="btn-remove-filters"
                 id="removeFiltersBtn"
                 aria-label="Remove filters"
@@ -163,21 +154,55 @@ export default function HomePage() {
             <span className="last-updated-text">
               Last updated: <span id="lastUpdatedTime">Just now</span>
             </span>
-            <div className="task-count-dropdown" id="taskCountDropdown">
-              <button
-                type="button"
-                className="task-count-trigger"
-                id="taskCountTrigger"
-                aria-haspopup="listbox"
-                aria-expanded="false"
-              >
-                Task Count <i className="fas fa-chevron-down"></i>
-              </button>
-              <div
-                className="task-count-menu"
-                id="taskCountMenu"
-                role="listbox"
-              ></div>
+            <div className="counter-row">
+              <div className="task-count-dropdown" id="taskCountDropdown">
+                <button
+                  type="button"
+                  className="task-count-trigger"
+                  id="taskCountTrigger"
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                >
+                  Task <i className="fas fa-chevron-down"></i>
+                </button>
+                <div
+                  className="task-count-menu"
+                  id="taskCountMenu"
+                  role="listbox"
+                ></div>
+              </div>
+              <div className="task-count-dropdown" id="connectCountDropdown">
+                <button
+                  type="button"
+                  className="task-count-trigger"
+                  id="connectCountTrigger"
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                >
+                  Connect <i className="fas fa-chevron-down"></i>
+                </button>
+                <div
+                  className="task-count-menu"
+                  id="connectCountMenu"
+                  role="listbox"
+                ></div>
+              </div>
+              <div className="task-count-dropdown" id="statusCountDropdown">
+                <button
+                  type="button"
+                  className="task-count-trigger"
+                  id="statusCountTrigger"
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                >
+                  Status <i className="fas fa-chevron-down"></i>
+                </button>
+                <div
+                  className="task-count-menu"
+                  id="statusCountMenu"
+                  role="listbox"
+                ></div>
+              </div>
             </div>
           </div>
           <div className="table-wrap">
@@ -238,7 +263,7 @@ export default function HomePage() {
                     id="airdropName"
                     name="name"
                     required
-                    placeholder="e.g. Infinex"
+                    placeholder="e.g. Bitcoin"
                   />
                 </div>
                 <div className="form-group">
@@ -247,7 +272,7 @@ export default function HomePage() {
                     type="text"
                     id="airdropCode"
                     name="code"
-                    placeholder="e.g. INX"
+                    placeholder="e.g. BTC"
                   />
                 </div>
               </div>
@@ -263,7 +288,7 @@ export default function HomePage() {
                     type="url"
                     id="airdropLink"
                     name="link"
-                    placeholder="e.g. https://infinex.io"
+                    placeholder="e.g. https://bitcoin.org"
                   />
                 </div>
               </div>
@@ -365,6 +390,9 @@ export default function HomePage() {
                     <option value="Whitelist">Whitelist</option>
                   </select>
                 </div>
+              </div>
+              <div className="add-airdrop-message">
+                Click "Save Airdrop" to add your airdrop.
               </div>
             </form>
           </div>
