@@ -116,6 +116,10 @@ export default function HomePage() {
               </button>
             </div>
           </div>
+          <div className="header-helper-text">
+            Add Options in Manage, Add Airdrops, Use search, filters, and
+            sorting.
+          </div>
           <div className="header-filters">
             <div className="search-wrap">
               <i className="fas fa-search search-icon"></i>
@@ -294,19 +298,42 @@ export default function HomePage() {
               </div>
               <div className="form-row">
                 <div className="form-group">
+                  <select
+                    id="airdropExtraLinkType"
+                    name="extraLinkType"
+                    defaultValue="website"
+                    className="is-hidden"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  >
+                    <option value="website">Website</option>
+                    <option value="x">X</option>
+                    <option value="discord">Discord</option>
+                    <option value="telegram">Telegram</option>
+                    <option value="github">GitHub</option>
+                  </select>
+                  <a
+                    href="#"
+                    id="addMoreLinksAnchor"
+                    className="add-more-links-anchor"
+                  >
+                    Add more
+                  </a>
+                  <div
+                    id="airdropExtraLinks"
+                    className="extra-links-list"
+                  ></div>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
                   <label htmlFor="airdropTaskType">Task</label>
                   <select
                     id="airdropTaskType"
                     name="taskType"
                     multiple
                     size={4}
-                  >
-                    <option value="daily">Daily</option>
-                    <option value="time-based">Time based</option>
-                    <option value="quest">Quest</option>
-                    <option value="retro">Retro</option>
-                    <option value="galxe">Galxe</option>
-                  </select>
+                  ></select>
                 </div>
               </div>
               <div className="form-section">Task details</div>
@@ -318,14 +345,7 @@ export default function HomePage() {
                     name="connectType"
                     multiple
                     size={4}
-                  >
-                    <option value="evm">EVM</option>
-                    <option value="gmail">Gmail</option>
-                    <option value="google">Google</option>
-                    <option value="sol">SOL</option>
-                    <option value="discord">Discord</option>
-                    <option value="x">X</option>
-                  </select>
+                  ></select>
                 </div>
               </div>
               <div className="form-row two-cols">
@@ -356,11 +376,7 @@ export default function HomePage() {
               <div className="form-row two-cols">
                 <div className="form-group">
                   <label htmlFor="airdropStatus">Status</label>
-                  <select id="airdropStatus" name="status">
-                    <option value="reward">Reward Available</option>
-                    <option value="potential">Potential</option>
-                    <option value="confirmed">Confirmed</option>
-                  </select>
+                  <select id="airdropStatus" name="status"></select>
                 </div>
                 <div className="form-group">
                   <label htmlFor="airdropStatusDate">Status date</label>
@@ -380,15 +396,7 @@ export default function HomePage() {
                     name="rewardType"
                     multiple
                     size={4}
-                  >
-                    <option value="">--</option>
-                    <option value="Airdrop">Airdrop</option>
-                    <option value="Ambassador">Ambassador</option>
-                    <option value="XP">XP</option>
-                    <option value="Point">Point</option>
-                    <option value="NFT">NFT</option>
-                    <option value="Whitelist">Whitelist</option>
-                  </select>
+                  ></select>
                 </div>
               </div>
               <div className="add-airdrop-message">
@@ -435,15 +443,7 @@ export default function HomePage() {
             <div className="filter-modal-grid">
               <label className="filter-modal-field">
                 <span>Task</span>
-                <select className="filter-select" id="taskFilter">
-                  <option value="">All</option>
-                  <option value="daily">Daily</option>
-                  <option value="time-based">Time based</option>
-                  <option value="quest">Quest</option>
-                  <option value="whitelist">Whitelist</option>
-                  <option value="retro">Retro</option>
-                  <option value="galxe">Galxe</option>
-                </select>
+                <select className="filter-select" id="taskFilter"></select>
               </label>
               <label className="filter-modal-field">
                 <span>Connect</span>
@@ -459,12 +459,7 @@ export default function HomePage() {
               </label>
               <label className="filter-modal-field">
                 <span>Status</span>
-                <select className="filter-select" id="statusFilter">
-                  <option value="">All</option>
-                  <option value="reward">Reward Available</option>
-                  <option value="potential">Potential</option>
-                  <option value="confirmed">Confirmed</option>
-                </select>
+                <select className="filter-select" id="statusFilter"></select>
               </label>
             </div>
           </div>
@@ -509,6 +504,7 @@ export default function HomePage() {
                     <option value="airdropConnectType">Connect</option>
                     <option value="airdropStatus">Status</option>
                     <option value="airdropRewardType">Reward</option>
+                    <option value="airdropExtraLinkType">Side link</option>
                   </select>
                 </div>
               </div>

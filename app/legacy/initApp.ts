@@ -112,6 +112,7 @@ export function initApp() {
   let deleteConfirmId = null;
   let viewMode = 'all';
   let LAST_TABLE_HTML = '';
+  let EXPANDED_MORE_ROWS = {};
 
   const $tableBody = byId('tableBody');
   const $searchInput = byId('searchInput');
@@ -129,6 +130,8 @@ export function initApp() {
   const $airdropFormClose = byId('airdropFormClose');
   const $airdropFormCancel = byId('airdropFormCancel');
   const $airdropFormTitle = byId('airdropFormTitle');
+  const $addMoreLinksAnchor = byId('addMoreLinksAnchor');
+  const $airdropExtraLinks = byId('airdropExtraLinks');
   const $deleteConfirmModal = byId('deleteConfirmModal');
   const $deleteConfirmClose = byId('deleteConfirmClose');
   const $deleteConfirmCancel = byId('deleteConfirmCancel');
@@ -500,11 +503,21 @@ export function initApp() {
   }
 
   function projectToFormData(p) {
+    const sideLinks = ensureArrayOr(p.sideLinks, []).map(function (item) {
+      if (item && typeof item === 'object') {
+        return {
+          type: (item.type || 'website'),
+          url: item.url || '',
+        };
+      }
+      return { type: 'website', url: item || '' };
+    });
     return {
       id: p.id,
       name: p.name,
       code: p.code,
       link: p.link || '',
+      sideLinks: sideLinks,
       taskType: ensureArray(p.taskType).slice(),
       connectType: ensureArray(p.connectType).slice(),
       taskCost: p.taskCost != null ? p.taskCost : '',
@@ -525,6 +538,11 @@ export function initApp() {
       name: name,
       code: (data.code || '').trim(),
       link: (data.link || '').trim() || null,
+      sideLinks: ensureArray(data.sideLinks).map(function (x) {
+        const type = x && typeof x === 'object' ? (x.type || 'website') : 'website';
+        const url = x && typeof x === 'object' ? (x.url || '') : (x || '');
+        return { type: String(type), url: String(url).trim() };
+      }).filter(function (x) { return !!x.url; }),
       logo: null,
       initial: initial,
       favorite: existingId ? (PROJECTS.find(function (p) { return p.id === existingId; }) || {}).favorite : false,
@@ -624,6 +642,24 @@ export function initApp() {
     const safeConnectTypeDisplay = escapeHtml(connectTypeDisplay || '--');
     const safeRewardTypeDisplay = escapeHtml(rewardTypeDisplay || '--');
     const safeLink = sanitizeUrl(p.link);
+    const expanded = !!EXPANDED_MORE_ROWS[p.id];
+    const sideLinks = ensureArrayOr(p.sideLinks, []).map(function (raw) {
+      const rawType = raw && typeof raw === 'object' ? (raw.type || 'website') : 'website';
+      const rawUrl = raw && typeof raw === 'object' ? (raw.url || '') : raw;
+      const href = sanitizeUrl(rawUrl);
+      if (!href) return null;
+      let label = getOptionTextBySelect('airdropExtraLinkType', rawType) || String(rawType);
+      let icon = 'fas fa-link';
+      try {
+        const host = new URL(href).hostname.replace(/^www\./, '');
+        if (!label || String(label).toLowerCase() === 'website') label = host;
+        if (rawType === 'x' || host.indexOf('x.com') >= 0 || host.indexOf('twitter.com') >= 0) icon = 'fa-brands fa-x-twitter';
+        else if (rawType === 'discord' || host.indexOf('discord') >= 0) icon = 'fa-brands fa-discord';
+        else if (rawType === 'telegram' || host.indexOf('t.me') >= 0 || host.indexOf('telegram') >= 0) icon = 'fa-brands fa-telegram';
+        else if (rawType === 'github' || host.indexOf('github.com') >= 0) icon = 'fa-brands fa-github';
+      } catch (e) {}
+      return { href: href, label: label, icon: icon };
+    }).filter(function (x) { return !!x; });
     
     const taskCellContent = `
         <span class="task-meta">
@@ -632,6 +668,11 @@ export function initApp() {
         </span>
         <span class="task-desc">${safeConnectTypeDisplay}</span>
       `;
+    const sideLinksHtml = sideLinks.length
+      ? sideLinks.map(function (x) {
+          return '<a href="' + x.href + '" target="_blank" rel="noopener noreferrer" class="side-link-chip"><i class="' + x.icon + '"></i><span>' + escapeHtml(x.label) + '</span></a>';
+        }).join('')
+      : '<span class="side-links-empty">No side links</span>';
     return `
       <tr data-id="${p.id}">
         <td class="col-name">
@@ -640,9 +681,12 @@ export function initApp() {
               <i class="${p.favorite ? 'fas' : 'far'} fa-star"></i>
             </button>
             <div class="project-info">
-              <a href="${safeLink || '#'}" target="_blank" rel="noopener noreferrer" class="project-link" ${!safeLink ? 'onclick="return false"' : ''}>
-                <div class="name">${safeName} <span class="code">${safeCode}</span></div>
-              </a>
+              <div class="project-name-row">
+                <a href="${safeLink || '#'}" target="_blank" rel="noopener noreferrer" class="project-link" ${!safeLink ? 'onclick="return false"' : ''}>
+                  <div class="name">${safeName} <span class="code">${safeCode}</span></div>
+                </a>
+                <button type="button" class="btn-action more btn-more-inline ${expanded ? 'is-open' : ''}" aria-label="More links" aria-expanded="${expanded ? 'true' : 'false'}" data-id="${p.id}" data-action="more">${expanded ? 'Less' : 'More'}</button>
+              </div>
               
             </div>
           </div>
@@ -667,6 +711,11 @@ export function initApp() {
             <button type="button" class="btn-action edit" aria-label="Edit" data-id="${p.id}" data-action="edit"><i class="fas fa-pen"></i></button>
             <button type="button" class="btn-action delete" aria-label="Delete" data-id="${p.id}" data-action="delete"><i class="fas fa-trash-alt"></i></button>
           </div>
+        </td>
+      </tr>
+      <tr class="side-links-row ${expanded ? '' : 'is-hidden'}" data-more-row-for="${p.id}">
+        <td colspan="6">
+          <div class="side-links-panel">${sideLinksHtml}</div>
         </td>
       </tr>
     `;
@@ -728,7 +777,7 @@ export function initApp() {
     if (!$tableBody) return;
     const nextHtml = filteredProjects.length
       ? filteredProjects.map(renderProjectRow).join('')
-      : '<tr class="no-data-row"><td class="no-data-cell" colspan="6">No airdrops found. Click "<strong>New</strong>" to add one, or clear filters to see all.</td></tr>';
+      : '<tr class="no-data-row"><td class="no-data-cell" colspan="6">No airdrops found.</td></tr>';
     if (nextHtml === LAST_TABLE_HTML) return;
     LAST_TABLE_HTML = nextHtml;
     $tableBody.innerHTML = nextHtml;
@@ -751,6 +800,11 @@ export function initApp() {
     if (actionBtn && $tableBody.contains(actionBtn)) {
       const id = parseInt(actionBtn.getAttribute('data-id'), 10);
       const action = actionBtn.getAttribute('data-action');
+      if (action === 'more') {
+        EXPANDED_MORE_ROWS[id] = !EXPANDED_MORE_ROWS[id];
+        renderTable();
+        return;
+      }
       if (action === 'edit') openAirdropFormForEdit(id);
       if (action === 'delete') openDeleteConfirmModal(id);
     }
@@ -904,12 +958,12 @@ export function initApp() {
   }
 
   function sortAllSelects() {
-    var ids = ['airdropTaskType','airdropConnectType','airdropStatus','taskFilter','taskTypeFilter','statusFilter','selectToManage'];
+    var ids = ['airdropTaskType','airdropConnectType','airdropStatus','airdropExtraLinkType','taskFilter','taskTypeFilter','statusFilter','selectToManage'];
     ids.forEach(function(id){ sortSelectElement(id); });
   }
 
   function initCustomOptions() {
-    var ids = ['airdropTaskType','airdropConnectType','airdropStatus','airdropRewardType'];
+    var ids = ['airdropTaskType','airdropConnectType','airdropStatus','airdropRewardType','airdropExtraLinkType'];
     ids.forEach(function(id) {
       if (CUSTOM_OPTIONS && CUSTOM_OPTIONS[id]) {
         applyCustomOptionsToSelect(id);
@@ -1033,6 +1087,7 @@ export function initApp() {
         
         // Refresh custom widgets and re-render table
         try { if (typeof refreshCustomMultiSelects === 'function') refreshCustomMultiSelects(); } catch(e) {}
+        refreshExtraLinkTypeSelects();
         applyFiltersFromState(); // Re-render table to show updated option names
         
         renderOptionsList(); // Re-render options list to show changes
@@ -1054,6 +1109,138 @@ export function initApp() {
     hideAirdropFormError();
   }
 
+  function getExtraLinkTypeOptions() {
+    const sel = byId('airdropExtraLinkType');
+    if (!sel) return [{ value: 'website', text: 'Website' }];
+    const options = Array.from(sel.options || []).map(function (o) {
+      return { value: o.value, text: o.text };
+    }).filter(function (o) { return !!o.value; });
+    return options.length ? options : [{ value: 'website', text: 'Website' }];
+  }
+
+  function buildExtraLinkTypeControl(typeValue) {
+    const selectedValue = String(typeValue || 'website');
+    const options = getExtraLinkTypeOptions();
+    const selected =
+      options.find(function (x) { return x.value === selectedValue; }) ||
+      { value: selectedValue, text: selectedValue };
+
+    const control = document.createElement('div');
+    control.className = 'extra-link-type-control';
+
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'sideLinkType';
+    hiddenInput.value = selected.value;
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'extra-link-type-trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.innerHTML =
+      '<span class="extra-link-type-current"><span>' + escapeHtml(selected.text) + '</span></span><span class="extra-link-type-caret">▼</span>';
+
+    const menu = document.createElement('div');
+    menu.className = 'extra-link-type-menu';
+    options.forEach(function (optItem) {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'extra-link-type-option';
+      item.setAttribute('data-value', optItem.value);
+      item.setAttribute('data-text', optItem.text);
+      item.innerHTML =
+        '<span>' + escapeHtml(optItem.text) + '</span>';
+      menu.appendChild(item);
+    });
+
+    control.appendChild(hiddenInput);
+    control.appendChild(trigger);
+    control.appendChild(menu);
+    return control;
+  }
+
+  function closeExtraLinkTypeMenus(exceptControl) {
+    if (!$airdropExtraLinks) return;
+    Array.from($airdropExtraLinks.querySelectorAll('.extra-link-type-control.is-open')).forEach(function (control) {
+      if (exceptControl && control === exceptControl) return;
+      control.classList.remove('is-open');
+      const trigger = control.querySelector('.extra-link-type-trigger');
+      if (trigger) trigger.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  function buildExtraLinkRow(entry) {
+    const item = entry && typeof entry === 'object' ? entry : { type: 'website', url: entry || '' };
+    const typeValue = (item.type || 'website').toString();
+    const urlValue = (item.url || '').toString();
+    const row = document.createElement('div');
+    row.className = 'extra-link-row';
+    const typeControl = buildExtraLinkTypeControl(typeValue);
+
+    const input = document.createElement('input');
+    input.type = 'url';
+    input.name = 'sideLinkUrl';
+    input.className = 'extra-link-input';
+    input.placeholder = 'https://...';
+    input.value = urlValue;
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'extra-link-delete';
+    delBtn.setAttribute('aria-label', 'Delete side link');
+    delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+
+    row.appendChild(typeControl);
+    row.appendChild(input);
+    row.appendChild(delBtn);
+    return row;
+  }
+
+  function addExtraLinkInput(value, shouldFocus) {
+    if (!$airdropExtraLinks) return;
+    const row = buildExtraLinkRow(value);
+    $airdropExtraLinks.appendChild(row);
+    if (shouldFocus) {
+      const input = row.querySelector('input[name="sideLinkUrl"]');
+      if (input && typeof input.focus === 'function') input.focus();
+    }
+  }
+
+  function setExtraLinkInputs(values) {
+    if (!$airdropExtraLinks) return;
+    $airdropExtraLinks.innerHTML = '';
+    ensureArrayOr(values, []).forEach(function (v) {
+      addExtraLinkInput(v, false);
+    });
+  }
+
+  function getExtraLinkValues() {
+    if (!$airdropExtraLinks) return [];
+    return Array.from($airdropExtraLinks.querySelectorAll('.extra-link-row'))
+      .map(function (row) {
+        const typeEl = row.querySelector('input[name="sideLinkType"]');
+        const urlEl = row.querySelector('input[name="sideLinkUrl"]');
+        const type = typeEl && typeEl.value ? typeEl.value : 'website';
+        const url = urlEl && urlEl.value ? urlEl.value.trim() : '';
+        return { type: type, url: url };
+      })
+      .filter(function (x) { return !!x.url; });
+  }
+
+  function refreshExtraLinkTypeSelects() {
+    if (!$airdropExtraLinks) return;
+    const rows = Array.from($airdropExtraLinks.querySelectorAll('.extra-link-row')).map(function (row) {
+      const typeEl = row.querySelector('input[name="sideLinkType"]');
+      const urlEl = row.querySelector('input[name="sideLinkUrl"]');
+      return {
+        type: typeEl && typeEl.value ? typeEl.value : 'website',
+        url: urlEl && urlEl.value ? urlEl.value : '',
+      };
+    });
+    setExtraLinkInputs(rows);
+  }
+
   function getAirdropFormData() {
     const idEl = byId('airdropId');
     const nameEl = byId('airdropName');
@@ -1072,6 +1259,7 @@ export function initApp() {
       name: nameEl ? nameEl.value : '',
       code: codeEl ? codeEl.value.toUpperCase() : '',
       link: linkEl ? linkEl.value : '',
+      sideLinks: getExtraLinkValues(),
       taskType: taskTypeEl ? (taskTypeEl.multiple ? Array.from(taskTypeEl.selectedOptions).map(function(o){ return o.value; }) : taskTypeEl.value) : [],
       connectType: connectTypeEl ? (connectTypeEl.multiple ? Array.from(connectTypeEl.selectedOptions).map(function(o){ return o.value; }) : connectTypeEl.value) : [],
       taskCost: taskCostEl ? taskCostEl.value : '0',
@@ -1097,6 +1285,7 @@ export function initApp() {
     set('airdropName', data.name);
     set('airdropCode', data.code);
     set('airdropLink', data.link);
+    setExtraLinkInputs(data.sideLinks);
     set('airdropTaskType', data.taskType);
     set('airdropConnectType', data.connectType);
     set('airdropTaskCost', data.taskCost);
@@ -1112,6 +1301,7 @@ export function initApp() {
       name: '',
       code: '',
       link: '',
+      sideLinks: [],
       taskType: '',
       connectType: '',
       taskCost: '',
@@ -1483,6 +1673,49 @@ export function initApp() {
     hideAirdropFormError();
     openAirdropFormModal();
   });
+  on($addMoreLinksAnchor, 'click', function (e) {
+    e.preventDefault();
+    addExtraLinkInput({ type: 'website', url: '' }, true);
+  });
+  on($airdropExtraLinks, 'click', function (e) {
+    const typeTrigger = e.target && e.target.closest ? e.target.closest('.extra-link-type-trigger') : null;
+    if (typeTrigger && $airdropExtraLinks && $airdropExtraLinks.contains(typeTrigger)) {
+      e.preventDefault();
+      const control = typeTrigger.closest('.extra-link-type-control');
+      const willOpen = !(control && control.classList.contains('is-open'));
+      closeExtraLinkTypeMenus(control);
+      if (control) {
+        control.classList.toggle('is-open', willOpen);
+        typeTrigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      }
+      return;
+    }
+
+    const typeOption = e.target && e.target.closest ? e.target.closest('.extra-link-type-option') : null;
+    if (typeOption && $airdropExtraLinks && $airdropExtraLinks.contains(typeOption)) {
+      e.preventDefault();
+      const control = typeOption.closest('.extra-link-type-control');
+      if (!control) return;
+      const value = typeOption.getAttribute('data-value') || 'website';
+      const text = typeOption.getAttribute('data-text') || value;
+      const hiddenInput = control.querySelector('input[name="sideLinkType"]');
+      const trigger = control.querySelector('.extra-link-type-trigger');
+      if (hiddenInput) hiddenInput.value = value;
+      if (trigger) {
+        trigger.innerHTML =
+          '<span class="extra-link-type-current"><span>' + escapeHtml(text) + '</span></span><span class="extra-link-type-caret">▼</span>';
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+      control.classList.remove('is-open');
+      return;
+    }
+
+    const deleteBtn = e.target && e.target.closest ? e.target.closest('.extra-link-delete') : null;
+    if (!deleteBtn || !$airdropExtraLinks || !$airdropExtraLinks.contains(deleteBtn)) return;
+    e.preventDefault();
+    const row = deleteBtn.closest('.extra-link-row');
+    if (row && row.parentNode) row.parentNode.removeChild(row);
+  });
   on($airdropForm, 'submit', handleAirdropFormSubmit);
   on($airdropFormClose, 'click', closeAirdropFormModal);
   on($airdropFormCancel, 'click', closeAirdropFormModal);
@@ -1535,6 +1768,7 @@ export function initApp() {
       syncFilterOptionsWithForm();
       // Refresh custom widgets and re-render table with updated options
       try { if (typeof refreshCustomMultiSelects === 'function') refreshCustomMultiSelects(); } catch(e) {}
+      refreshExtraLinkTypeSelects();
       applyFiltersFromState(); // Update table display with new option values
       setAuthStatus('Changed options', 'success', true);
     }
@@ -1619,6 +1853,10 @@ export function initApp() {
   on($connectCountMenu, 'click', applyCounterFilter);
   on($statusCountMenu, 'click', applyCounterFilter);
   document.addEventListener('click', function (e) {
+    if ($airdropExtraLinks && $airdropExtraLinks.contains(e.target)) return;
+    closeExtraLinkTypeMenus();
+  });
+  document.addEventListener('click', function (e) {
     if ($taskCountDropdown && $taskCountDropdown.contains(e.target)) return;
     if ($connectCountDropdown && $connectCountDropdown.contains(e.target)) return;
     if ($statusCountDropdown && $statusCountDropdown.contains(e.target)) return;
@@ -1626,6 +1864,7 @@ export function initApp() {
   });
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
+    closeExtraLinkTypeMenus();
     closeAllCounterDropdowns();
   });
   window.addEventListener('scroll', function () {

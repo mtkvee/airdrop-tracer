@@ -21,17 +21,46 @@ function toNumber(value, fallback) {
   return Number.isFinite(num) ? num : fallback;
 }
 
+function normalizeSideLinkItem(item) {
+  if (item && typeof item === 'object') {
+    const type = clampString(item.type || 'website', 32) || 'website';
+    const url = clampString(item.url || '', MAX_LINK);
+    if (!url) return null;
+    return { type: type, url: url };
+  }
+  const url = clampString(item, MAX_LINK);
+  if (!url) return null;
+  return { type: 'website', url: url };
+}
+
 export function normalizeProjects(list) {
   return (list || []).map(function (p) {
     const taskTypeSource = (p.taskType != null && p.taskType !== '') ? p.taskType : p.task;
     const taskType = clampArray(ensureArray(taskTypeSource), MAX_ARRAY);
     const connectType = clampArray(ensureArray(p.connectType), MAX_ARRAY);
     const rewardType = clampArray(ensureArrayOr(p.rewardType, []), MAX_ARRAY);
+    const rawSideLinks = Array.isArray(p.sideLinks)
+      ? p.sideLinks
+      : Array.isArray(p.extraLinks)
+        ? p.extraLinks
+        : [
+            p.sideLinks && p.sideLinks.x,
+            p.sideLinks && p.sideLinks.discord,
+            p.sideLinks && p.sideLinks.telegram,
+            p.xLink,
+            p.discordLink,
+            p.telegramLink,
+          ];
+    const sideLinks = rawSideLinks
+      .map(normalizeSideLinkItem)
+      .filter(function (v) { return !!v; })
+      .slice(0, MAX_ARRAY);
     return {
       id: toNumber(p.id, Date.now()),
       name: clampString(p.name, MAX_NAME),
       code: clampString(p.code, MAX_CODE),
       link: clampString(p.link, MAX_LINK),
+      sideLinks: sideLinks,
       logo: p.logo || '',
       initial: (p.name && p.name.charAt(0)) ? p.name.charAt(0).toUpperCase() : '?',
       favorite: !!p.favorite,
