@@ -268,6 +268,7 @@ export default function HomePage() {
                     name="name"
                     required
                     placeholder="e.g. Bitcoin"
+                    autoComplete="true"
                   />
                 </div>
                 <div className="form-group">
@@ -527,7 +528,7 @@ export default function HomePage() {
                     type="text"
                     id="newOptionValue"
                     name="newOptionValue"
-                    placeholder="e.g. quest"
+                    placeholder="e.g. evm"
                   />
                 </div>
                 <div className="form-group">
@@ -536,7 +537,7 @@ export default function HomePage() {
                     type="text"
                     id="newOptionText"
                     name="newOptionText"
-                    placeholder="e.g. Quest"
+                    placeholder="e.g. EVM"
                   />
                 </div>
               </div>

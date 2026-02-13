@@ -868,15 +868,11 @@ button {
 .empty-state-manage-btn {
   margin-top: 0.25rem;
   padding: 0.5rem 0.75rem !important;
-  background: var(--color-accent-star) !important;
-  color: var(--color-white) !important;
+  background: none !important;
+  color: var(--color-accent-star) !important;
   font-weight: 500 !important;
   font-size: 0.9rem !important;
   border: none !important;
-}
-
-.empty-state-manage-btn:hover {
-  background: var(--color-accent-star-hover) !important;
 }
 
 /* Column: Name */

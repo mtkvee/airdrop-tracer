@@ -1,23 +1,22 @@
-// @ts-nocheck
-export function ensureArray(value) {
+export function ensureArray<T>(value: T | T[] | null | undefined | ""): T[] {
   if (Array.isArray(value)) return value;
   if (value == null || value === '') return [];
   return [value];
 }
 
-export function ensureArrayOr(value, fallback) {
+export function ensureArrayOr<T>(value: T | T[] | null | undefined | "", fallback: T[]): T[] {
   const arr = ensureArray(value);
   if (arr.length) return arr;
   return Array.isArray(fallback) ? fallback.slice() : [];
 }
 
-export function escapeHtml(text) {
+export function escapeHtml(text: unknown): string {
   const div = document.createElement('div');
   div.textContent = text != null ? String(text) : '';
   return div.innerHTML;
 }
 
-export function formatRelativeTime(timestamp) {
+export function formatRelativeTime(timestamp: number): string {
   if (!timestamp) return 'Never';
   const now = Date.now();
   const diff = now - timestamp;
@@ -39,7 +38,7 @@ export function formatRelativeTime(timestamp) {
   });
 }
 
-export function sanitizeUrl(url) {
+export function sanitizeUrl(url: string): string {
   if (!url) return '';
   try {
     var base =

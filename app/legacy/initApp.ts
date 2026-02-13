@@ -6,6 +6,9 @@ import { ensureArray, ensureArrayOr, escapeHtml, formatRelativeTime, sanitizeUrl
 import { normalizeProjects } from './normalize';
 import { mergePayloads } from './merge';
 import { normalizeSideLinks, toRenderableSideLinks } from './sideLinks';
+import { STATUS_CONFIG, MANAGED_SELECT_IDS, SORTABLE_SELECT_IDS, MULTI_SELECT_IDS, DEFAULT_OPTIONS_BY_SELECT } from './constants';
+import { getNextProjectId, projectToFormData, formDataToProject, hasProjectDuplicate } from './projectHelpers';
+import { validateProjectLinks } from './validation';
 
 export function initApp() {
   'use strict';
@@ -44,6 +47,25 @@ export function initApp() {
 
   function setModalState(modal, open) {
     if (!modal) return;
+    const activeEl = document.activeElement as HTMLElement | null;
+    const isFocusInside = !!(activeEl && modal.contains(activeEl));
+    const previousFocus = (modal as any).__previousActiveElement as HTMLElement | null;
+
+    if (open) {
+      if (activeEl && !modal.contains(activeEl)) {
+        (modal as any).__previousActiveElement = activeEl;
+      }
+      modal.removeAttribute('inert');
+      try { (modal as any).inert = false; } catch (e) {}
+    } else {
+      if (isFocusInside) {
+        if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+        else if (activeEl && typeof activeEl.blur === 'function') activeEl.blur();
+      }
+      modal.setAttribute('inert', '');
+      try { (modal as any).inert = true; } catch (e) {}
+    }
+
     modal.classList.toggle('open', open);
     modal.setAttribute('aria-hidden', open ? 'false' : 'true');
     document.body.style.overflow = open ? 'hidden' : '';
@@ -132,12 +154,6 @@ export function initApp() {
   let LAST_SIGNED_OUT_AT = 0;
   let CLOUD_UNSUBSCRIBE = null;
   let IGNORE_REMOTE_APPLY = false;
-
-  const STATUS_CONFIG = {
-    reward: { label: 'Reward Available', class: 'reward' },
-    potential: { label: 'Potential', class: 'potential' },
-    confirmed: { label: 'Confirmed', class: 'confirmed' },
-  };
 
   let filteredProjects = [];
   let sortKey = 'name';
@@ -538,57 +554,11 @@ export function initApp() {
 
 
   function getNextId() {
-    return PROJECTS.length ? Math.max.apply(null, PROJECTS.map(function (p) { return p.id; })) + 1 : 1;
-  }
-
-  function projectToFormData(p) {
-    const sideLinks = normalizeSideLinks(ensureArrayOr(p.sideLinks, []));
-    return {
-      id: p.id,
-      name: p.name,
-      code: p.code,
-      link: p.link || '',
-      sideLinks: sideLinks,
-      note: p.note || '',
-      taskType: ensureArray(p.taskType).slice(),
-      connectType: ensureArray(p.connectType).slice(),
-      taskCost: p.taskCost != null ? p.taskCost : '',
-      taskTime: p.taskTime != null ? p.taskTime : '',
-      status: p.status || 'potential',
-      statusDate: p.statusDate || '',
-      rewardType: ensureArrayOr(p.rewardType, []).slice(),
-    };
-  }
-
-  function formDataToProject(data, existingId) {
-    const id = existingId || getNextId();
-    const name = (data.name || '').trim();
-    const initial = name ? name.charAt(0).toUpperCase() : '?';
-    const now = Date.now();
-    return {
-      id: id,
-      name: name,
-      code: (data.code || '').trim(),
-      link: (data.link || '').trim() || null,
-      sideLinks: normalizeSideLinks(ensureArray(data.sideLinks)),
-      note: (data.note || '').trim(),
-      logo: null,
-      initial: initial,
-      favorite: existingId ? (PROJECTS.find(function (p) { return p.id === existingId; }) || {}).favorite : false,
-      taskType: ensureArray(data.taskType),
-      connectType: ensureArray(data.connectType),
-      taskCost: data.taskCost !== '' && data.taskCost != null ? Number(data.taskCost) : 0,
-      taskTime: data.taskTime !== '' && data.taskTime != null ? Number(data.taskTime) : 3,
-      status: data.status || 'potential',
-      statusDate: (data.statusDate || '').trim() || '',
-      rewardType: ensureArrayOr(data.rewardType, []),
-      logos: existingId ? (PROJECTS.find(function (p) { return p.id === existingId; }) || {}).logos : [],
-      lastEdited: now,
-    };
+    return getNextProjectId(PROJECTS);
   }
 
   function addProject(data) {
-    const p = formDataToProject(data, null);
+    const p = formDataToProject(data, null, PROJECTS);
     PROJECTS.push(p);
     updateLastUpdatedTime();
     applyFiltersFromState();
@@ -600,7 +570,7 @@ export function initApp() {
     const idx = PROJECTS.findIndex(function (p) { return p.id === id; });
     if (idx === -1) return;
     const existing = PROJECTS[idx];
-    const p = formDataToProject(data, id);
+    const p = formDataToProject(data, id, PROJECTS);
     p.favorite = existing.favorite;
     p.logos = existing.logos;
     PROJECTS[idx] = p;
@@ -691,7 +661,8 @@ export function initApp() {
       : '<span class="side-links-empty">No sub links</span>';
     const sideLinksNoteHtml = safeNote ? '<div class="project-note">' + safeNote + '</div>' : '';
     const sideLinksHtml = sideLinksNoteHtml + '<div class="side-links-links">' + sideLinksLinksHtml + '</div>';
-    const moreButtonHtml = sideLinks.length
+    const hasMoreContent = sideLinks.length || !!safeNote;
+    const moreButtonHtml = hasMoreContent
       ? '<button type="button" class="btn-action more btn-more-inline ' + (expanded ? 'is-open' : '') + '" aria-label="More links" aria-expanded="' + (expanded ? 'true' : 'false') + '" data-id="' + p.id + '" data-action="more">' + (expanded ? 'Less <i class="fa-solid fa-chevron-up"></i>' : 'More <i class="fa-solid fa-chevron-down"></i>') + '</button>'
       : '';
     return `
@@ -795,7 +766,7 @@ export function initApp() {
     if (!$tableBody) return;
     const nextHtml = filteredProjects.length
       ? filteredProjects.map(renderProjectRow).join('')
-      : '<tr class="no-data-row"><td class="no-data-cell" colspan="6"><div class="empty-state-card"><div class="empty-state-title">No airdrops yet.</div><div class="empty-state-copy">First, add options (Task, Connect, Status, Reward, Sub link), then create your first drop .</div><button type="button" class="btn-secondary empty-state-manage-btn" data-action="open-manage-options"><i class="fa-solid fa-bars-progress"></i>&nbsp;&nbsp;Manage Options</button></div></td></tr>';
+      : '<tr class="no-data-row"><td class="no-data-cell" colspan="6"><div class="empty-state-card"><div class="empty-state-title">No airdrops yet.</div><div class="empty-state-copy">First, add options (Task, Connect, Status, Reward, Sub link), then create your first drop .</div><button type="button" class="btn-secondary empty-state-manage-btn" data-action="open-manage-options">Manage Options</button></div></td></tr>';
     if (nextHtml === LAST_TABLE_HTML) return;
     LAST_TABLE_HTML = nextHtml;
     $tableBody.innerHTML = nextHtml;
@@ -983,13 +954,37 @@ export function initApp() {
   }
 
   function sortAllSelects() {
-    var ids = ['airdropTaskType','airdropConnectType','airdropStatus','airdropExtraLinkType','taskFilter','taskTypeFilter','statusFilter','selectToManage'];
-    ids.forEach(function(id){ sortSelectElement(id); });
+    SORTABLE_SELECT_IDS.forEach(function(id){ sortSelectElement(id); });
+  }
+
+  function ensureDefaultManagedOptions() {
+    let changed = false;
+    Object.keys(DEFAULT_OPTIONS_BY_SELECT).forEach(function (id) {
+      const selectEl = byId(id);
+      if (!selectEl) return;
+      const hasCustom = Array.isArray(CUSTOM_OPTIONS && CUSTOM_OPTIONS[id]) && CUSTOM_OPTIONS[id].length > 0;
+      const hasSelectValues = Array.from(selectEl.options || []).some(function (opt: any) { return opt && opt.value !== ''; });
+      if (hasCustom || hasSelectValues) return;
+
+      const defaults = (DEFAULT_OPTIONS_BY_SELECT as any)[id] || [];
+      defaults.forEach(function (entry: any) {
+        const option = document.createElement('option');
+        option.value = entry.value;
+        option.text = entry.text;
+        selectEl.appendChild(option);
+      });
+
+      CUSTOM_OPTIONS[id] = defaults.map(function (entry: any) {
+        return { value: entry.value, text: entry.text };
+      });
+      changed = true;
+    });
+    if (changed) saveToLocalStorage(true);
   }
 
   function initCustomOptions() {
-    var ids = ['airdropTaskType','airdropConnectType','airdropStatus','airdropRewardType','airdropExtraLinkType'];
-    ids.forEach(function(id) {
+    ensureDefaultManagedOptions();
+    MANAGED_SELECT_IDS.forEach(function(id) {
       if (CUSTOM_OPTIONS && CUSTOM_OPTIONS[id]) {
         applyCustomOptionsToSelect(id);
       }
@@ -1047,8 +1042,7 @@ export function initApp() {
   }
 
   function resetAllManagedOptions() {
-    var managedIds = ['airdropTaskType', 'airdropConnectType', 'airdropStatus', 'airdropRewardType', 'airdropExtraLinkType'];
-    managedIds.forEach(clearSelectOptions);
+    MANAGED_SELECT_IDS.forEach(clearSelectOptions);
     CUSTOM_OPTIONS = {};
     saveToLocalStorage();
     syncFilterOptionsWithForm();
@@ -1392,39 +1386,18 @@ export function initApp() {
     }
   }
 
-  function isHttpUrl(value) {
-    if (!value) return false;
-    try {
-      const parsed = new URL(value);
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-    } catch (e) {
-      return false;
-    }
-  }
-
   function validateLinkInputs(data) {
     clearLinkValidationState();
-    const errors = [];
-    const main = (data.link || '').trim();
+    const result = validateProjectLinks(data);
     const mainEl = byId('airdropLink');
-    if (main && !isHttpUrl(main)) {
-      errors.push('Main link must be a valid http(s) URL');
-      if (mainEl) mainEl.classList.add('input-invalid');
-    }
-
-    if ($airdropExtraLinks) {
+    if (result.invalidMain && mainEl) mainEl.classList.add('input-invalid');
+    if ($airdropExtraLinks && result.invalidSideIndexes.length) {
       const sideInputs = Array.from($airdropExtraLinks.querySelectorAll('input[name="sideLinkUrl"]'));
-      const sideLinks = ensureArray(data.sideLinks);
-      sideLinks.forEach(function (entry, idx) {
-        const url = String((entry && entry.url) || '').trim();
-        if (!url) return;
-        if (!isHttpUrl(url)) {
-          errors.push('Sub link #' + (idx + 1) + ' must be a valid http(s) URL');
-          if (sideInputs[idx]) sideInputs[idx].classList.add('input-invalid');
-        }
+      result.invalidSideIndexes.forEach(function (idx) {
+        if (sideInputs[idx]) sideInputs[idx].classList.add('input-invalid');
       });
     }
-    return errors;
+    return result.errors;
   }
 
   function openAirdropFormForEdit(id) {
@@ -1450,26 +1423,7 @@ export function initApp() {
       showAirdropFormError('Name is required');
       return;
     }
-    var codeVal = (data.code || '').trim().toUpperCase();
-    var rawLinkVal = (data.link || '').trim();
-    var normalizeLinkForDedup = function (value) {
-      if (!value) return '';
-      try {
-        const parsed = new URL(value);
-        const path = parsed.pathname.replace(/\/+$/, '');
-        return (parsed.origin + path).toLowerCase();
-      } catch (err) {
-        return value.toLowerCase();
-      }
-    };
-    var linkVal = normalizeLinkForDedup(rawLinkVal);
-    var exists = PROJECTS.some(function (p) {
-      if (p.id === data.id) return false;
-      var sameName = p.name && p.name.toLowerCase() === nameVal.toLowerCase();
-      var sameCode = codeVal && p.code && String(p.code).toUpperCase() === codeVal;
-      var sameLink = linkVal && normalizeLinkForDedup(p.link || '') === linkVal;
-      return sameName || sameCode || sameLink;
-    });
+    var exists = hasProjectDuplicate(PROJECTS, data);
     if (exists) {
       showAirdropFormError('Possible duplicate found (same name/code/link)');
       return;
@@ -1731,7 +1685,7 @@ export function initApp() {
   }
 
   function refreshCustomMultiSelects() {
-    ['airdropTaskType','airdropConnectType','airdropRewardType'].forEach(function(id){ createOrUpdateCustomMultiSelect(id); });
+    MULTI_SELECT_IDS.forEach(function(id){ createOrUpdateCustomMultiSelect(id); });
   }
 
 

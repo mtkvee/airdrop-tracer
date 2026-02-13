@@ -1,6 +1,6 @@
-// @ts-nocheck
 import { ensureArray, ensureArrayOr } from './utils';
 import { normalizeSideLinks } from './sideLinks';
+import type { Project, SideLink } from './types';
 
 const MAX_ARRAY = 20;
 const MAX_NAME = 80;
@@ -9,22 +9,22 @@ const MAX_LINK = 2048;
 const MAX_STATUS_DATE = 40;
 const MAX_NOTE = 280;
 
-function clampString(value, max) {
+function clampString(value: unknown, max: number): string {
   const str = value == null ? '' : String(value);
   return str.length > max ? str.slice(0, max) : str;
 }
 
-function clampArray(values, max) {
+function clampArray(values: unknown[], max: number): string[] {
   return values.slice(0, max).map(function (v) { return clampString(v, 32); });
 }
 
-function toNumber(value, fallback) {
+function toNumber(value: unknown, fallback: number): number {
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
 }
 
-export function normalizeProjects(list) {
-  return (list || []).map(function (p) {
+export function normalizeProjects(list: unknown[] | null | undefined): Project[] {
+  return (list || []).map(function (p: any): Project {
     const taskTypeSource = (p.taskType != null && p.taskType !== '') ? p.taskType : p.task;
     const taskType = clampArray(ensureArray(taskTypeSource), MAX_ARRAY);
     const connectType = clampArray(ensureArray(p.connectType), MAX_ARRAY);
@@ -41,14 +41,14 @@ export function normalizeProjects(list) {
             p.discordLink,
             p.telegramLink,
           ];
-    const sideLinks = normalizeSideLinks(rawSideLinks)
+    const sideLinks = normalizeSideLinks(rawSideLinks as any)
       .map(function (item) {
         return {
           type: clampString(item.type, 32),
           url: clampString(item.url, MAX_LINK),
         };
       })
-      .filter(function (v) { return !!v; })
+      .filter(function (v): v is SideLink { return !!v; })
       .slice(0, MAX_ARRAY);
     var normalizedLastEdited = toNumber(p.lastEdited || p.createdAt, Date.now());
     return {
