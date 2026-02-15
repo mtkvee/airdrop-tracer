@@ -48,7 +48,7 @@ export function toRenderableSideLinks(
         host = new URL(href).hostname.replace(/^www\./, '');
       } catch (e) {}
       let label = getTypeLabel ? getTypeLabel(entry.type) : entry.type;
-      if (!label || String(label).toLowerCase() === 'website') label = host || 'Link';
+      if (!label) label = entry.type || 'Link';
       return {
         type: entry.type,
         href: href,
