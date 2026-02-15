@@ -662,7 +662,7 @@ export function initApp() {
       `;
     const sideLinksLinksHtml = sideLinks.length
       ? sideLinks.map(function (x) {
-          return '<a href="' + x.href + '" target="_blank" rel="noopener noreferrer" class="side-link-chip" aria-label="' + escapeHtml(x.label) + '" title="' + escapeHtml(x.label) + '"><i class="' + x.icon + '"></i></a>';
+          return '<a href="' + x.href + '" target="_blank" rel="noopener noreferrer" class="side-link-chip" aria-label="' + escapeHtml(x.label) + '" title="' + escapeHtml(x.label) + '"><i class="' + x.icon + '"></i><span>' + escapeHtml(x.label) + '</span></a>';
         }).join('')
       : '<span class="side-links-empty">No sub links</span>';
     const sideLinksNoteHtml = safeNote ? '<div class="project-note">' + safeNote + '</div>' : '';
