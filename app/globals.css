@@ -1147,7 +1147,7 @@ button {
   padding: 0.35rem 0.65rem;
   background: var(--color-surface);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 .side-link-chip:hover {
   border-color: var(--color-border-strong);
@@ -1754,7 +1754,6 @@ select#airdropRewardType {
   border-radius: var(--radius-sm);
   font-size: 0.95rem;
   color: var(--color-text);
-  font-weight: 600;
 }
 
 .edit-option-form input:focus {
