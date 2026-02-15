@@ -651,6 +651,17 @@ export function initApp() {
     const sideLinks = toRenderableSideLinks(p.sideLinks, function (type) {
       return getOptionTextBySelect('airdropExtraLinkType', type) || String(type || '');
     });
+    const sortedSideLinks = sideLinks.slice().sort(function (a, b) {
+      const aLabel = String(a.label || '').trim().toLowerCase();
+      const bLabel = String(b.label || '').trim().toLowerCase();
+      if (aLabel < bLabel) return -1;
+      if (aLabel > bLabel) return 1;
+      const aHref = String(a.href || '').trim().toLowerCase();
+      const bHref = String(b.href || '').trim().toLowerCase();
+      if (aHref < bHref) return -1;
+      if (aHref > bHref) return 1;
+      return 0;
+    });
     const safeNote = escapeHtml((p.note || '').trim());
     
     const taskCellContent = `
@@ -660,8 +671,8 @@ export function initApp() {
         </span>
         <span class="task-desc">${safeConnectTypeDisplay}</span>
       `;
-    const sideLinksLinksHtml = sideLinks.length
-      ? sideLinks.map(function (x) {
+    const sideLinksLinksHtml = sortedSideLinks.length
+      ? sortedSideLinks.map(function (x) {
           return '<a href="' + x.href + '" target="_blank" rel="noopener noreferrer" class="side-link-chip" aria-label="' + escapeHtml(x.label) + '" title="' + escapeHtml(x.label) + '"><i class="' + x.icon + '"></i><span>' + escapeHtml(x.label) + '</span></a>';
         }).join('')
       : '<span class="side-links-empty">No sub links</span>';
