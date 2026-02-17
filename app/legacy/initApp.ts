@@ -167,6 +167,7 @@ export function initApp() {
   let sortDir = 'asc';
   let deleteConfirmId = null;
   let viewMode = 'all';
+  let sideLinkTypeFilter = '';
   let LAST_TABLE_HTML = '';
   let EXPANDED_MORE_ROWS = {};
 
@@ -241,6 +242,9 @@ export function initApp() {
   const $statusCountDropdown = byId('statusCountDropdown');
   const $statusCountTrigger = byId('statusCountTrigger');
   const $statusCountMenu = byId('statusCountMenu');
+  const $subLinkCountDropdown = byId('subLinkCountDropdown');
+  const $subLinkCountTrigger = byId('subLinkCountTrigger');
+  const $subLinkCountMenu = byId('subLinkCountMenu');
   const $recentBtn = byId('recentBtn');
   let AUTH_STATUS_LAST_KEY = '';
   let AUTH_STATUS_HIDE_TIMER = null;
@@ -296,6 +300,7 @@ export function initApp() {
     const taskCounts = {};
     const connectCounts = {};
     const statusCounts = {};
+    const subLinkCounts = {};
     PROJECTS.forEach(function (p) {
       ensureArray(p.taskType).forEach(function (t) {
         if (!t) return;
@@ -308,11 +313,17 @@ export function initApp() {
       if (p.status) {
         statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
       }
+      normalizeSideLinks(p.sideLinks).forEach(function (lnk) {
+        var type = normalizeOptionValue((lnk && lnk.type) || '');
+        if (!type) return;
+        subLinkCounts[type] = (subLinkCounts[type] || 0) + 1;
+      });
     });
     const total = PROJECTS.length;
     buildCounterItems($taskCountMenu, 'airdropTaskType', 'task', taskCounts, total);
     buildCounterItems($connectCountMenu, 'airdropConnectType', 'connect', connectCounts, total);
     buildCounterItems($statusCountMenu, 'airdropStatus', 'status', statusCounts, total);
+    buildCounterItems($subLinkCountMenu, 'airdropExtraLinkType', 'subLink', subLinkCounts, total);
   }
 
   function applyCounterFilter(e) {
@@ -331,6 +342,9 @@ export function initApp() {
     } else if (type === 'status' && $statusFilter) {
       $statusFilter.value = value;
       $statusFilter.dispatchEvent(new Event('change'));
+    } else if (type === 'subLink') {
+      sideLinkTypeFilter = value;
+      applyFiltersFromState();
     }
     setAuthStatus('Filter as ' + selectedLabel, 'success', true);
     closeAllCounterDropdowns();
@@ -738,6 +752,7 @@ export function initApp() {
     const taskType = $taskFilter && $taskFilter.value || '';
     const connectType = $taskTypeFilter && $taskTypeFilter.value || '';
     const status = $statusFilter && $statusFilter.value || '';
+    const sideLinkType = sideLinkTypeFilter || '';
     filteredProjects = PROJECTS.filter(function (p) {
       if (search) {
         const match = (p.name + ' ' + p.code + ' ' + (p.note || '')).toLowerCase().includes(search);
@@ -750,6 +765,12 @@ export function initApp() {
         if (!p.connectType || !Array.isArray(p.connectType) || !p.connectType.includes(connectType)) return false;
       }
       if (status && p.status !== status) return false;
+      if (sideLinkType) {
+        var hasSideLinkType = normalizeSideLinks(p.sideLinks).some(function (lnk) {
+          return normalizeOptionValue((lnk && lnk.type) || '') === sideLinkType;
+        });
+        if (!hasSideLinkType) return false;
+      }
 
       return true;
     });
@@ -1514,6 +1535,7 @@ export function initApp() {
     if ($taskTypeFilter && $taskTypeFilter.value) hadAnyFilter = true;
     if ($statusFilter && $statusFilter.value) hadAnyFilter = true;
     if ($searchInput && $searchInput.value) hadAnyFilter = true;
+    if (sideLinkTypeFilter) hadAnyFilter = true;
     if (viewMode !== 'all') hadAnyFilter = true;
     if ($taskFilter) {
       $taskFilter.value = '';
@@ -1531,6 +1553,7 @@ export function initApp() {
       $searchInput.value = '';
       $searchInput.dispatchEvent(new Event('input'));
     }
+    sideLinkTypeFilter = '';
     viewMode = 'all';
     updateRecentButtonState();
     applyFiltersFromState();
@@ -1995,6 +2018,7 @@ export function initApp() {
       { dropdown: $taskCountDropdown, trigger: $taskCountTrigger },
       { dropdown: $connectCountDropdown, trigger: $connectCountTrigger },
       { dropdown: $statusCountDropdown, trigger: $statusCountTrigger },
+      { dropdown: $subLinkCountDropdown, trigger: $subLinkCountTrigger },
     ].forEach(function (item) {
       if (!item.dropdown || !item.trigger) return;
       item.dropdown.classList.remove('open');
@@ -2010,9 +2034,13 @@ export function initApp() {
   on($statusCountTrigger, 'click', function () {
     toggleCounterDropdown($statusCountDropdown, $statusCountTrigger);
   });
+  on($subLinkCountTrigger, 'click', function () {
+    toggleCounterDropdown($subLinkCountDropdown, $subLinkCountTrigger);
+  });
   on($taskCountMenu, 'click', applyCounterFilter);
   on($connectCountMenu, 'click', applyCounterFilter);
   on($statusCountMenu, 'click', applyCounterFilter);
+  on($subLinkCountMenu, 'click', applyCounterFilter);
   document.addEventListener('click', function (e) {
     if ($airdropExtraLinks && $airdropExtraLinks.contains(e.target)) return;
     closeExtraLinkTypeMenus();
@@ -2021,6 +2049,7 @@ export function initApp() {
     if ($taskCountDropdown && $taskCountDropdown.contains(e.target)) return;
     if ($connectCountDropdown && $connectCountDropdown.contains(e.target)) return;
     if ($statusCountDropdown && $statusCountDropdown.contains(e.target)) return;
+    if ($subLinkCountDropdown && $subLinkCountDropdown.contains(e.target)) return;
     closeAllCounterDropdowns();
   });
   document.addEventListener('keydown', function (e) {

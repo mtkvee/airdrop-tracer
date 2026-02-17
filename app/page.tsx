@@ -187,6 +187,22 @@ export default function HomePage() {
                   role="listbox"
                 ></div>
               </div>
+              <div className="task-count-dropdown" id="subLinkCountDropdown">
+                <button
+                  type="button"
+                  className="task-count-trigger"
+                  id="subLinkCountTrigger"
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                >
+                  Sub link <i className="fas fa-chevron-down"></i>
+                </button>
+                <div
+                  className="task-count-menu"
+                  id="subLinkCountMenu"
+                  role="listbox"
+                ></div>
+              </div>
               <div className="counter-tools">
                 <div className="filter-bar">
                   <button
