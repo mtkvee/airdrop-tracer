@@ -817,84 +817,73 @@ export function initApp() {
     }
   }
 
+  function normalizeOptionValue(value) {
+    return String(value == null ? '' : value).trim().toLowerCase();
+  }
+
+  function dedupeOptionEntries(entries) {
+    var seen: Record<string, boolean> = {};
+    var deduped = [];
+    (entries || []).forEach(function (entry) {
+      if (!entry) return;
+      var rawValue = String(entry.value == null ? '' : entry.value).trim();
+      if (!rawValue) return;
+      var key = normalizeOptionValue(rawValue);
+      if (seen[key]) return;
+      seen[key] = true;
+      deduped.push({
+        value: rawValue,
+        text: String(entry.text == null ? rawValue : entry.text).trim() || rawValue,
+      });
+    });
+    return deduped;
+  }
+
+  function getUniqueNonEmptySelectOptions(selectEl) {
+    if (!selectEl) return [];
+    var entries = Array.from(selectEl.options || []).map(function (opt) {
+      return { value: opt.value, text: opt.text };
+    });
+    return dedupeOptionEntries(entries);
+  }
+
+  function syncSelectOptions(sourceSelect, targetSelect, targetSelectIdForSort) {
+    if (!sourceSelect || !targetSelect) return;
+    var currentFilterValue = targetSelect.value;
+    var formOptions = getUniqueNonEmptySelectOptions(sourceSelect);
+
+    while (targetSelect.options.length > 1) {
+      targetSelect.remove(1);
+    }
+
+    formOptions.forEach(function (opt) {
+      const option = document.createElement('option');
+      option.value = opt.value;
+      option.text = opt.text;
+      targetSelect.appendChild(option);
+    });
+
+    targetSelect.value = currentFilterValue;
+    if (targetSelectIdForSort) sortSelectElement(targetSelectIdForSort);
+  }
+
   function syncFilterOptionsWithForm() {
     // Sync Task options from airdropTaskType to taskFilter
     const $airdropTaskType = byId('airdropTaskType');
     if ($airdropTaskType && $taskFilter) {
-      const formOptions = Array.from($airdropTaskType.options).map(function(opt) {
-        return { value: opt.value, text: opt.text };
-      });
-      const currentFilterValue = $taskFilter.value;
-      
-      // Clear existing options (keep the empty option)
-      while ($taskFilter.options.length > 1) {
-        $taskFilter.remove(1);
-      }
-      
-      // Add options from form
-      formOptions.forEach(function(opt) {
-        if (opt.value) { // Skip empty option
-          const option = document.createElement('option');
-          option.value = opt.value;
-          option.text = opt.text;
-          $taskFilter.appendChild(option);
-        }
-      });
-      
-      // Restore previous selection if it still exists
-      $taskFilter.value = currentFilterValue;
-      // ensure header filter is alphabetically ordered
-      sortSelectElement('taskFilter');
+      syncSelectOptions($airdropTaskType, $taskFilter, 'taskFilter');
     }
 
     // Sync Connect options from airdropConnectType to taskTypeFilter
     const $airdropConnectType = byId('airdropConnectType');
     if ($airdropConnectType && $taskTypeFilter) {
-      const formOptions = Array.from($airdropConnectType.options).map(function(opt) {
-        return { value: opt.value, text: opt.text };
-      });
-      const currentFilterValue = $taskTypeFilter.value;
-      
-      while ($taskTypeFilter.options.length > 1) {
-        $taskTypeFilter.remove(1);
-      }
-      
-      formOptions.forEach(function(opt) {
-        if (opt.value) {
-          const option = document.createElement('option');
-          option.value = opt.value;
-          option.text = opt.text;
-          $taskTypeFilter.appendChild(option);
-        }
-      });
-      
-      $taskTypeFilter.value = currentFilterValue;
-      sortSelectElement('taskTypeFilter');
+      syncSelectOptions($airdropConnectType, $taskTypeFilter, 'taskTypeFilter');
     }
 
     // Sync Status options from airdropStatus to statusFilter
     const $airdropStatus = byId('airdropStatus');
     if ($airdropStatus && $statusFilter) {
-      const formOptions = Array.from($airdropStatus.options).map(function(opt) {
-        return { value: opt.value, text: opt.text };
-      });
-      const currentFilterValue = $statusFilter.value;
-      
-      while ($statusFilter.options.length > 1) {
-        $statusFilter.remove(1);
-      }
-      
-      formOptions.forEach(function(opt) {
-        if (opt.value) {
-          const option = document.createElement('option');
-          option.value = opt.value;
-          option.text = opt.text;
-          $statusFilter.appendChild(option);
-        }
-      });
-      
-      $statusFilter.value = currentFilterValue;
-      sortSelectElement('statusFilter');
+      syncSelectOptions($airdropStatus, $statusFilter, 'statusFilter');
     }
 
     // Sync Reward options from airdropRewardType (collect from actual data)
@@ -921,8 +910,9 @@ export function initApp() {
       empty.text = selectEl.getAttribute('data-empty-text') || '';
       selectEl.appendChild(empty);
     }
-    // sort custom options alphabetically by display text
-    var sorted = (CUSTOM_OPTIONS[id] || []).slice().sort(function(a,b){
+    // Deduplicate first, then sort custom options alphabetically by display text.
+    var dedupedOptions = dedupeOptionEntries(CUSTOM_OPTIONS[id] || []);
+    var sorted = dedupedOptions.slice().sort(function(a,b){
       return String(a.text).localeCompare(String(b.text), 'en', { sensitivity: 'base' });
     });
     sorted.forEach(function(o) {
@@ -941,10 +931,16 @@ export function initApp() {
     if (!sel) return;
     var empty = null;
     var items = [];
+    var seen: Record<string, boolean> = {};
     for (var i = 0; i < sel.options.length; i++) {
       var o = sel.options[i];
       if (i === 0 && o.value === '') { empty = { value: o.value, text: o.text }; }
-      else items.push({ value: o.value, text: o.text });
+      else {
+        var key = normalizeOptionValue(o.value);
+        if (!key || seen[key]) continue;
+        seen[key] = true;
+        items.push({ value: String(o.value).trim(), text: o.text });
+      }
     }
     items.sort(function(a, b) { return String(a.text).localeCompare(String(b.text), 'en', { sensitivity: 'base' }); });
     var cur = sel.value;
@@ -1024,9 +1020,9 @@ export function initApp() {
   function persistCustomOptionsForSelect(selectEl) {
     if (!selectEl || !selectEl.id) return;
     var id = selectEl.id;
-    var arr = Array.from(selectEl.options)
-      .filter(function (o) { return o.value !== ''; })
-      .map(function (o) { return { value: o.value, text: o.text }; });
+    var arr = dedupeOptionEntries(Array.from(selectEl.options).map(function (o) {
+      return { value: o.value, text: o.text };
+    }));
     arr.sort(function (a, b) {
       return String(a.text).localeCompare(String(b.text), 'en', { sensitivity: 'base' });
     });
@@ -1150,6 +1146,18 @@ export function initApp() {
 
     // Update the option in the select element
     if (manageOptionsCurrentSelect && editOptionCurrentValue) {
+      var nextKey = normalizeOptionValue(newValue);
+      var oldKey = normalizeOptionValue(editOptionCurrentValue);
+      var duplicate = Array.from(manageOptionsCurrentSelect.options || []).some(function (o) {
+        if (!o || !o.value) return false;
+        var key = normalizeOptionValue(o.value);
+        if (key === oldKey) return false;
+        return key === nextKey;
+      });
+      if (duplicate) {
+        setAuthStatus('Another option already uses this value.', 'error', true);
+        return;
+      }
       var opt = Array.from(manageOptionsCurrentSelect.options).find(function(o) { return o.value === editOptionCurrentValue; });
       if (opt) {
         opt.value = newValue;
@@ -1895,6 +1903,15 @@ export function initApp() {
       return;
     }
     if (manageOptionsCurrentSelect) {
+      var incomingKey = normalizeOptionValue(value);
+      var alreadyExists = Array.from(manageOptionsCurrentSelect.options || []).some(function (o) {
+        if (!o || !o.value) return false;
+        return normalizeOptionValue(o.value) === incomingKey;
+      });
+      if (alreadyExists) {
+        setAuthStatus('Option already exists for this field.', 'error', true);
+        return;
+      }
       const option = document.createElement('option');
       option.value = value;
       option.text = text;

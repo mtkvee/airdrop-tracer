@@ -1,6 +1,10 @@
 import { normalizeProjects } from './normalize';
 import type { CustomOption, LegacyPayload, Project } from './types';
 
+function normalizeOptionValue(value: unknown): string {
+  return String(value == null ? '' : value).trim().toLowerCase();
+}
+
 export function mergeCustomOptions(
   localOptions: Record<string, CustomOption[]>,
   cloudOptions: Record<string, CustomOption[]>
@@ -14,7 +18,9 @@ export function mergeCustomOptions(
     var addAll = function (arr: CustomOption[] | undefined) {
       (arr || []).forEach(function (opt) {
         if (!opt || !opt.value) return;
-        if (!byValue[opt.value]) byValue[opt.value] = opt;
+        var key = normalizeOptionValue(opt.value);
+        if (!key) return;
+        if (!byValue[key]) byValue[key] = { value: String(opt.value).trim(), text: opt.text };
       });
     };
     addAll(cloudOptions && cloudOptions[id]);
