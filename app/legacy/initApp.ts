@@ -308,6 +308,8 @@ export function initApp() {
       });
       ensureArray(p.connectType).forEach(function (c) {
         if (!c) return;
+        // Ignore legacy/unintended connect value in counter dropdown.
+        if (normalizeOptionValue(c) === 'evm') return;
         connectCounts[c] = (connectCounts[c] || 0) + 1;
       });
       if (p.status) {
@@ -2055,9 +2057,6 @@ export function initApp() {
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
     closeExtraLinkTypeMenus();
-    closeAllCounterDropdowns();
-  });
-  window.addEventListener('scroll', function () {
     closeAllCounterDropdowns();
   });
   on($backToTopBtn, 'click', function () {
