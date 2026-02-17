@@ -245,6 +245,12 @@ export function initApp() {
   const $subLinkCountDropdown = byId('subLinkCountDropdown');
   const $subLinkCountTrigger = byId('subLinkCountTrigger');
   const $subLinkCountMenu = byId('subLinkCountMenu');
+  const COUNTER_DROPDOWN_CONFIGS = [
+    { type: 'task', dropdown: $taskCountDropdown, trigger: $taskCountTrigger, menu: $taskCountMenu },
+    { type: 'connect', dropdown: $connectCountDropdown, trigger: $connectCountTrigger, menu: $connectCountMenu },
+    { type: 'status', dropdown: $statusCountDropdown, trigger: $statusCountTrigger, menu: $statusCountMenu },
+    { type: 'subLink', dropdown: $subLinkCountDropdown, trigger: $subLinkCountTrigger, menu: $subLinkCountMenu },
+  ];
   const $recentBtn = byId('recentBtn');
   let AUTH_STATUS_LAST_KEY = '';
   let AUTH_STATUS_HIDE_TIMER = null;
@@ -294,6 +300,61 @@ export function initApp() {
       items.push('<button type="button" class="task-count-item task-count-filter-item" data-filter-type="' + filterType + '" data-filter-value="' + escapeHtml(k) + '"><span class="task-count-label">' + escapeHtml(label) + '</span><span class="task-count-badge">' + counts[k] + '</span></button>');
     });
     menuEl.innerHTML = items.join('');
+  }
+
+  function getCounterFilterValue(type) {
+    if (type === 'task' && $taskFilter) return $taskFilter.value || '';
+    if (type === 'connect' && $taskTypeFilter) return $taskTypeFilter.value || '';
+    if (type === 'status' && $statusFilter) return $statusFilter.value || '';
+    if (type === 'subLink') return sideLinkTypeFilter || '';
+    return '';
+  }
+
+  function clearCounterFilterValue(type) {
+    if (type === 'task' && $taskFilter) {
+      $taskFilter.value = '';
+      $taskFilter.dispatchEvent(new Event('change'));
+      return;
+    }
+    if (type === 'connect' && $taskTypeFilter) {
+      $taskTypeFilter.value = '';
+      $taskTypeFilter.dispatchEvent(new Event('change'));
+      return;
+    }
+    if (type === 'status' && $statusFilter) {
+      $statusFilter.value = '';
+      $statusFilter.dispatchEvent(new Event('change'));
+      return;
+    }
+    if (type === 'subLink') {
+      sideLinkTypeFilter = '';
+      applyFiltersFromState();
+    }
+  }
+
+  function updateCounterTriggerState(triggerEl, selectedValue, clearTitle) {
+    if (!triggerEl) return;
+    const iconEl = triggerEl.querySelector('.counter-trigger-icon');
+    if (!iconEl) return;
+    const hasSelection = !!selectedValue;
+    triggerEl.classList.toggle('is-filtered', hasSelection);
+    if (hasSelection) {
+      iconEl.classList.remove('fas', 'fa-chevron-down');
+      iconEl.classList.add('fa-solid', 'fa-xmark');
+      iconEl.setAttribute('aria-hidden', 'true');
+      iconEl.setAttribute('title', clearTitle || 'Clear filter');
+    } else {
+      iconEl.classList.remove('fa-solid', 'fa-xmark');
+      iconEl.classList.add('fas', 'fa-chevron-down');
+      iconEl.setAttribute('aria-hidden', 'true');
+      iconEl.removeAttribute('title');
+    }
+  }
+
+  function updateCounterTriggerStates() {
+    COUNTER_DROPDOWN_CONFIGS.forEach(function (cfg) {
+      updateCounterTriggerState(cfg.trigger, getCounterFilterValue(cfg.type), 'Clear ' + cfg.type + ' filter');
+    });
   }
 
   function renderTaskCounters() {
@@ -755,6 +816,7 @@ export function initApp() {
     const connectType = $taskTypeFilter && $taskTypeFilter.value || '';
     const status = $statusFilter && $statusFilter.value || '';
     const sideLinkType = sideLinkTypeFilter || '';
+    updateCounterTriggerStates();
     filteredProjects = PROJECTS.filter(function (p) {
       if (search) {
         const match = (p.name + ' ' + p.code + ' ' + (p.note || '')).toLowerCase().includes(search);
@@ -912,9 +974,6 @@ export function initApp() {
     // Sync Reward options from airdropRewardType (collect from actual data)
     const $airdropRewardType = byId('airdropRewardType');
     if ($airdropRewardType) {
-      const rewardTypeOptions = Array.from($airdropRewardType.options).map(function(opt) {
-        return { value: opt.value, text: opt.text };
-      });
       // Note: Reward is used in data but not exposed as a filter dropdown in header currently
       // This function sets up the infrastructure for it if added later
     }
@@ -2016,42 +2075,36 @@ export function initApp() {
     triggerEl.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
   }
   function closeAllCounterDropdowns() {
-    [
-      { dropdown: $taskCountDropdown, trigger: $taskCountTrigger },
-      { dropdown: $connectCountDropdown, trigger: $connectCountTrigger },
-      { dropdown: $statusCountDropdown, trigger: $statusCountTrigger },
-      { dropdown: $subLinkCountDropdown, trigger: $subLinkCountTrigger },
-    ].forEach(function (item) {
+    COUNTER_DROPDOWN_CONFIGS.forEach(function (item) {
       if (!item.dropdown || !item.trigger) return;
       item.dropdown.classList.remove('open');
       item.trigger.setAttribute('aria-expanded', 'false');
     });
   }
-  on($taskCountTrigger, 'click', function () {
-    toggleCounterDropdown($taskCountDropdown, $taskCountTrigger);
+  COUNTER_DROPDOWN_CONFIGS.forEach(function (cfg) {
+    on(cfg.trigger, 'click', function (e) {
+      const clickedIcon = !!(e && e.target && e.target.closest && e.target.closest('.counter-trigger-icon'));
+      const hasSelection = !!getCounterFilterValue(cfg.type);
+      if (clickedIcon && hasSelection) {
+        e.preventDefault();
+        e.stopPropagation();
+        clearCounterFilterValue(cfg.type);
+        closeAllCounterDropdowns();
+        return;
+      }
+      toggleCounterDropdown(cfg.dropdown, cfg.trigger);
+    });
+    on(cfg.menu, 'click', applyCounterFilter);
   });
-  on($connectCountTrigger, 'click', function () {
-    toggleCounterDropdown($connectCountDropdown, $connectCountTrigger);
-  });
-  on($statusCountTrigger, 'click', function () {
-    toggleCounterDropdown($statusCountDropdown, $statusCountTrigger);
-  });
-  on($subLinkCountTrigger, 'click', function () {
-    toggleCounterDropdown($subLinkCountDropdown, $subLinkCountTrigger);
-  });
-  on($taskCountMenu, 'click', applyCounterFilter);
-  on($connectCountMenu, 'click', applyCounterFilter);
-  on($statusCountMenu, 'click', applyCounterFilter);
-  on($subLinkCountMenu, 'click', applyCounterFilter);
   document.addEventListener('click', function (e) {
     if ($airdropExtraLinks && $airdropExtraLinks.contains(e.target)) return;
     closeExtraLinkTypeMenus();
   });
   document.addEventListener('click', function (e) {
-    if ($taskCountDropdown && $taskCountDropdown.contains(e.target)) return;
-    if ($connectCountDropdown && $connectCountDropdown.contains(e.target)) return;
-    if ($statusCountDropdown && $statusCountDropdown.contains(e.target)) return;
-    if ($subLinkCountDropdown && $subLinkCountDropdown.contains(e.target)) return;
+    var clickedInside = COUNTER_DROPDOWN_CONFIGS.some(function (cfg) {
+      return !!(cfg.dropdown && cfg.dropdown.contains(e.target));
+    });
+    if (clickedInside) return;
     closeAllCounterDropdowns();
   });
   document.addEventListener('keydown', function (e) {

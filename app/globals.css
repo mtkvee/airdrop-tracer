@@ -721,6 +721,22 @@ button {
 .task-count-trigger:hover {
   background: var(--color-bg);
 }
+.task-count-trigger .counter-trigger-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  min-width: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  padding-top: 0.2rem;
+  margin: 0 0 0 0.05rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.task-count-trigger.is-filtered .counter-trigger-icon {
+  cursor: pointer;
+}
 
 .task-count-menu {
   position: absolute;
@@ -1215,7 +1231,6 @@ button {
 .modal-title {
   margin: 0;
   font-size: 1.5rem;
-  font-weight: 700;
   color: var(--color-text);
   font-weight: 600;
 }

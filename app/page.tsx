@@ -147,7 +147,7 @@ export default function HomePage() {
                   aria-haspopup="listbox"
                   aria-expanded="false"
                 >
-                  Task <i className="fas fa-chevron-down"></i>
+                  Task <i className="counter-trigger-icon fas fa-chevron-down"></i>
                 </button>
                 <div
                   className="task-count-menu"
@@ -163,7 +163,7 @@ export default function HomePage() {
                   aria-haspopup="listbox"
                   aria-expanded="false"
                 >
-                  Connect <i className="fas fa-chevron-down"></i>
+                  Connect <i className="counter-trigger-icon fas fa-chevron-down"></i>
                 </button>
                 <div
                   className="task-count-menu"
@@ -179,7 +179,7 @@ export default function HomePage() {
                   aria-haspopup="listbox"
                   aria-expanded="false"
                 >
-                  Status <i className="fas fa-chevron-down"></i>
+                  Status <i className="counter-trigger-icon fas fa-chevron-down"></i>
                 </button>
                 <div
                   className="task-count-menu"
@@ -195,7 +195,7 @@ export default function HomePage() {
                   aria-haspopup="listbox"
                   aria-expanded="false"
                 >
-                  Sub link <i className="fas fa-chevron-down"></i>
+                  Sub link <i className="counter-trigger-icon fas fa-chevron-down"></i>
                 </button>
                 <div
                   className="task-count-menu"
