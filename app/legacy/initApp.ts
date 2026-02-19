@@ -4,7 +4,6 @@ import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from
 import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ensureArray, ensureArrayOr, escapeHtml, formatRelativeTime, sanitizeUrl } from './utils';
 import { normalizeProjects } from './normalize';
-import { mergePayloads } from './merge';
 import { normalizeSideLinks, toRenderableSideLinks } from './sideLinks';
 import { STATUS_CONFIG, MANAGED_SELECT_IDS, SORTABLE_SELECT_IDS, MULTI_SELECT_IDS, DEFAULT_OPTIONS_BY_SELECT } from './constants';
 import { projectToFormData, formDataToProject, hasProjectDuplicate } from './projectHelpers';
@@ -574,13 +573,14 @@ export function initApp() {
   async function syncFromCloud(user) {
     if (!user) return;
     setAuthStatus('Checking cloud...', 'muted');
+    const localPayload = buildPayload();
     const cloudPayload = await readCloudState(user.uid);
     const cloudUpdated = cloudPayload && cloudPayload.lastUpdatedAt ? Number(cloudPayload.lastUpdatedAt) : 0;
     const localUpdated = Number(LAST_UPDATED_AT || 0);
     if (!cloudPayload) {
       setAuthStatus('Cloud ready (local data)...', 'muted');
       if (PROJECTS.length || Object.keys(CUSTOM_OPTIONS || {}).length) {
-        queueCloudSave(buildPayload());
+        saveCloudStateNow(localPayload);
       }
       return;
     }
@@ -588,9 +588,9 @@ export function initApp() {
       setAuthStatus('Cloud synced', 'success');
       return;
     }
-    var merged = mergePayloads(buildPayload(), cloudPayload);
-    applyPayload(merged);
-    queueCloudSave(merged);
+    var resolved = pickLatestSyncPayload(localPayload, cloudPayload);
+    applyPayload(resolved);
+    if (resolved === localPayload) saveCloudStateNow(localPayload);
     setAuthStatus('Cloud synced', 'success');
   }
 
@@ -636,6 +636,25 @@ export function initApp() {
     }, 300);
   }
 
+  function saveCloudStateNow(payload) {
+    if (!CLOUD_ENABLED || !CLOUD_DB || !CLOUD_USER) return;
+    const data = payload || buildPayload();
+    if (CLOUD_SAVE_TIMER) {
+      clearTimeout(CLOUD_SAVE_TIMER);
+      CLOUD_SAVE_TIMER = null;
+    }
+    IGNORE_REMOTE_APPLY = true;
+    writeCloudState(data);
+    setTimeout(function () { IGNORE_REMOTE_APPLY = false; }, 300);
+  }
+
+  function pickLatestSyncPayload(localPayload, cloudPayload) {
+    const localUpdated = Number(localPayload && localPayload.lastUpdatedAt || 0);
+    const cloudUpdated = Number(cloudPayload && cloudPayload.lastUpdatedAt || 0);
+    if (cloudUpdated > localUpdated) return cloudPayload;
+    return localPayload;
+  }
+
 
   function addProject(data) {
     const p = formDataToProject(data, null, PROJECTS);
@@ -666,7 +685,7 @@ export function initApp() {
     PROJECTS.splice(idx, 1);
     updateLastUpdatedTime();
     applyFiltersFromState();
-    queueCloudSave(buildPayload());
+    saveCloudStateNow(buildPayload());
     setAuthStatus('Deleted', 'success', true);
   }
 
@@ -690,7 +709,7 @@ export function initApp() {
     PROJECTS = [];
     updateLastUpdatedTime();
     applyFiltersFromState();
-    queueCloudSave(buildPayload());
+    saveCloudStateNow(buildPayload());
     closeDeleteAllConfirmModal();
     setAuthStatus('Deleted All', 'success', true);
   }
@@ -1046,15 +1065,36 @@ export function initApp() {
     SORTABLE_SELECT_IDS.forEach(function(id){ sortSelectElement(id); });
   }
 
+  function countCustomOptionEntries() {
+    return Object.keys(CUSTOM_OPTIONS || {}).reduce(function (sum, id) {
+      var arr = CUSTOM_OPTIONS && CUSTOM_OPTIONS[id];
+      if (!Array.isArray(arr)) return sum;
+      return sum + arr.length;
+    }, 0);
+  }
+
+  function hasAnyManagedSelectValues() {
+    return MANAGED_SELECT_IDS.some(function (id) {
+      var selectEl = byId(id);
+      if (!selectEl) return false;
+      return Array.from(selectEl.options || []).some(function (opt: any) { return opt && opt.value !== ''; });
+    });
+  }
+
+  function shouldSeedDefaultManagedOptions() {
+    // Seed only on pristine state (no projects, no custom options, no existing select options).
+    if (PROJECTS && PROJECTS.length > 0) return false;
+    if (countCustomOptionEntries() > 0) return false;
+    if (hasAnyManagedSelectValues()) return false;
+    return true;
+  }
+
   function ensureDefaultManagedOptions() {
+    if (!shouldSeedDefaultManagedOptions()) return;
     let changed = false;
     Object.keys(DEFAULT_OPTIONS_BY_SELECT).forEach(function (id) {
       const selectEl = byId(id);
       if (!selectEl) return;
-      const hasCustom = Array.isArray(CUSTOM_OPTIONS && CUSTOM_OPTIONS[id]) && CUSTOM_OPTIONS[id].length > 0;
-      const hasSelectValues = Array.from(selectEl.options || []).some(function (opt: any) { return opt && opt.value !== ''; });
-      if (hasCustom || hasSelectValues) return;
-
       const defaults = (DEFAULT_OPTIONS_BY_SELECT as any)[id] || [];
       defaults.forEach(function (entry: any) {
         const option = document.createElement('option');
@@ -1071,10 +1111,20 @@ export function initApp() {
     if (changed) saveToLocalStorage(true);
   }
 
-  function initCustomOptions() {
-    ensureDefaultManagedOptions();
+  function initCustomOptions(allowDefaultSeeding) {
+    if (allowDefaultSeeding !== false) ensureDefaultManagedOptions();
     MANAGED_SELECT_IDS.forEach(function(id) {
-      if (CUSTOM_OPTIONS && CUSTOM_OPTIONS[id]) {
+      var selectEl = byId(id);
+      if (!selectEl) return;
+      var keepEmpty = selectEl.options.length && selectEl.options[0].value === '';
+      selectEl.innerHTML = '';
+      if (keepEmpty) {
+        var empty = document.createElement('option');
+        empty.value = '';
+        empty.text = selectEl.getAttribute('data-empty-text') || '';
+        selectEl.appendChild(empty);
+      }
+      if (CUSTOM_OPTIONS && Array.isArray(CUSTOM_OPTIONS[id]) && CUSTOM_OPTIONS[id].length) {
         applyCustomOptionsToSelect(id);
       }
     });
@@ -1135,7 +1185,8 @@ export function initApp() {
   function resetAllManagedOptions() {
     MANAGED_SELECT_IDS.forEach(clearSelectOptions);
     CUSTOM_OPTIONS = {};
-    saveToLocalStorage();
+    saveToLocalStorage(true);
+    saveCloudStateNow(buildPayload());
     syncFilterOptionsWithForm();
     try { if (typeof refreshCustomMultiSelects === 'function') refreshCustomMultiSelects(); } catch (e) {}
     refreshExtraLinkTypeSelects();
@@ -1196,6 +1247,7 @@ export function initApp() {
           if (foundIndex >= 0) {
             manageOptionsCurrentSelect.remove(foundIndex);
             persistCustomOptionsForSelect(manageOptionsCurrentSelect);
+            saveCloudStateNow(buildPayload());
             renderOptionsList();
             setAuthStatus('Option removed', 'success', true);
           }
@@ -1651,7 +1703,7 @@ export function initApp() {
       return;
     }
     // apply custom options to selects then persist
-    initCustomOptions();
+    initCustomOptions(false);
     syncFilterOptionsWithForm();
     updateLastUpdatedDisplay();
     saveToLocalStorage();
